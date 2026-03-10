@@ -1,53 +1,101 @@
-# obsidian-spotify-frontmatter
+# Obsidian Spotify Frontmatter Utility
 
-Adds Spotify-derived frontmatter to album notes in your Obsidian vault.
+A Node.js command‑line tool that fetches album metadata from Spotify and writes structured YAML frontmatter into notes inside your Obsidian vault. Designed for safety, reproducibility, and ergonomic workflows.
+
+---
 
 ## Features
-- Configure a single NOTES_ROOT directory for all generated notes.
-- One filename per album (prompted).
-- `.md` appended automatically only if missing.
-- Absolute paths rejected; filenames are resolved relative to NOTES_ROOT.
-- Non-destructive frontmatter merging (existing fields preserved).
-- Album frontmatter schema matches your vault (see below).
 
-## Album frontmatter schema
-- type: text
-- title: text
-- artist: text
-- release_date: date
-- original_release: date
-- label: list(string)
-- genres: list(string)
-- duration: text
-- discs: number
-- studio: list(string)
-- producers: list(string)
-- tracklist: list(string)
-- emotional_resonance: list(string)
-- ikigai_alignment: list(string)
-- bonus_content: list(string)
-- updated: date
-- sticker: text
-- cover: text
-- color: text
+### 🎵 Spotify Metadata Enrichment
+- Fetches album metadata using Spotify’s Client Credentials API.
+- Populates:
+  - title  
+  - artist  
+  - release_date  
+  - original_release  
+  - label  
+  - genres (merged from album + artist)  
+  - duration (computed from tracklist)  
+  - discs  
+  - tracklist  
+  - cover image URL  
+- Preserves existing frontmatter (non‑destructive merge).
 
-## Notes about behavior
-- The CLI will now attempt to populate `genres` from album or artist data.
-- The CLI searches only the configured `NOTES_ROOT` folder (non-recursive) for existing files and offers to reuse them.
-- The CLI re-prompts on invalid input and accepts `q`, `quit`, or `exit` to abort.
+### 🗂 NOTES_ROOT System
+- All notes are created inside a single configured folder.
+- NOTES_ROOT is stored in `.env` and can be reset with:
+node spotify-frontmatter-cli.mjs –reset-root
+
+
+### 📝 Filename Handling
+- Suggested filename automatically generated from `artist + album`.
+- Partial filename search:
+- Type any substring → utility shows matching files in NOTES_ROOT.
+- Non‑recursive search (fast and safe).
+- `.md` auto‑appended only if missing.
+- Absolute paths rejected.
+
+### 🔁 Interactive Loop
+- After writing a note, the utility asks whether to process another album.
+- Clean newline formatting for all prompts.
+
+### 🔐 Safe Behavior
+- Never overwrites without confirmation.
+- Never writes outside NOTES_ROOT.
+- `.env` is ignored by Git; `.env.example` provided.
+
+---
+
+## Installation
+npm install
+
+## Dependencies:
+• inquirer
+• node-fetch
+• dotenv
+• js-yaml
+
+---
 
 ## Usage
-1. Install dependencies:
-npm install
-2. First run:
-You will be prompted to enter:
-- NOTES_ROOT (absolute path to your notes directory)
-- Spotify Client ID and Client Secret (if not already in `.env`)
-3. To change the notes root later:
-node spotify-frontmatter-cli.mjs –reset-root
-4. To reset Spotify credentials:
-node spotify-frontmatter-cli.mjs –reset-auth
+
+### First Run
+node spotify-frontmatter-cli.mjs
+You will be prompted for:
+• NOTES_ROOT (absolute path)
+• Spotify Client ID
+• Spotify Client Secret
+
+### Resetting Settings
+node spotify-frontmatter-cli.mjs --reset-root
+node spotify-frontmatter-cli.mjs --reset-auth
+
+### Album Frontmatter Schema
+type: album
+title: string
+artist: string
+release_date: date
+original_release: date
+label: list(string)
+genres: list(string)
+duration: string
+discs: number
+studio: list(string)
+producers: list(string)
+tracklist: list(string)
+emotional_resonance: list(string)
+ikigai_alignment: list(string)
+bonus_content: list(string)
+updated: date
+sticker: string
+cover: string
+color: string
+
+## Roadmap
+See ENHANCEMENTS.md for the full roadmap.
+
+---
 
 ## Credits
-- **Bradford Douglas Hill (Brad)** — original project owner and schema design
-- **Microsoft Copilot** — implementation and integration assistance
+• Bradford Douglas Hill (Brad) — project owner, schema designer, workflow architect
+• Microsoft Copilot — implementation partner, CLI design, UX, and documentation
