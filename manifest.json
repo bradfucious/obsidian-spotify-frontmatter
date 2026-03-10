@@ -1,0 +1,13 @@
+{
+  "id": "obsidian-spotify-frontmatter",
+  "name": "Obsidian Spotify Frontmatter",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.0",
+  "description": "Generate Spotify-derived album frontmatter in your vault with configurable notes root, non-destructive merging, and a user-defined album schema.",
+  "author": "Bradford Douglas Hill",
+  "authorUrl": "https://github.com/bradfucious",
+  "isDesktopOnly": false,
+  "main": "main.js",
+  "css": "styles.css"
+}
+

@@ -29,18 +29,32 @@ export function buildAlbumFrontmatter(albumDetails, artist) {
     durationText = msToDuration(totalMs);
   }
 
+  // Genres: prefer album genres, fall back to artist genres
+  const genres = Array.isArray(albumDetails.genres) && albumDetails.genres.length
+    ? albumDetails.genres
+    : (artist && Array.isArray(artist.genres) ? artist.genres : []);
+
+  // Label: Spotify exposes albumDetails.label as a string sometimes
+  const label = albumDetails.label ? [albumDetails.label] : [];
+
+  // Producers and studio: Spotify does not reliably expose these.
+  // If available in albumDetails (custom fields), try to parse them; otherwise leave empty.
+  // Keep schema consistent and non-destructive.
+  const producers = Array.isArray(albumDetails.producers) ? albumDetails.producers : [];
+  const studio = Array.isArray(albumDetails.studio) ? albumDetails.studio : [];
+
   const front = {
     type: "album",
     title: albumDetails.name || "",
     artist: artist.name || "",
     release_date: albumDetails.release_date || "",
     original_release: albumDetails.release_date || "",
-    label: albumDetails.label ? [albumDetails.label] : [],
-    genres: albumDetails.genres || [],
+    label,
+    genres,
     duration: durationText,
     discs: albumDetails.total_tracks ? 1 : 0,
-    studio: [],
-    producers: [],
+    studio,
+    producers,
     tracklist,
     emotional_resonance: [],
     ikigai_alignment: [],

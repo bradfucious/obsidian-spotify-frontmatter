@@ -10,7 +10,6 @@ import { buildAlbumFrontmatter, writeFrontmatterFile, ensureMdExtension } from "
 
 dotenv.config();
 
-const NOTES_ROOT = getEnv("NOTES_ROOT");
 const CLIENT_ID = getEnv("SPOTIFY_CLIENT_ID");
 const CLIENT_SECRET = getEnv("SPOTIFY_CLIENT_SECRET");
 
@@ -35,30 +34,41 @@ async function main() {
 
   const token = await getClientCredentialsToken();
 
-  // Artist search
-  const { artistName } = await inquirer.prompt({
-    type: "input",
-    name: "artistName",
-    message: "Artist name:",
-    validate: (v) => (v && v.trim().length ? true : "Please enter an artist name"),
-  });
-
-  const artists = await searchArtist(artistName, token);
-  if (!artists.length) {
-    console.log("No artists found.");
-    process.exit(1);
+  // Artist selection loop with retry/quit
+  let artist = null;
+  while (!artist) {
+    const { artistName } = await inquirer.prompt({
+      type: "input",
+      name: "artistName",
+      message: "Artist name (or type q/quit/exit to abort):",
+      validate: (v) => (v && v.trim() ? true : "Please enter an artist name"),
+    });
+    const rawArtist = artistName.trim();
+    if (["q", "quit", "exit"].includes(rawArtist.toLowerCase())) {
+      console.log("Aborted by user.");
+      process.exit(0);
+    }
+    const artists = await searchArtist(rawArtist, token);
+    if (!artists.length) {
+      const { tryAgain } = await inquirer.prompt({
+        type: "confirm",
+        name: "tryAgain",
+        message: "No artists found. Try again?",
+        default: true,
+      });
+      if (!tryAgain) process.exit(0);
+      continue;
+    }
+    const artistChoice = await inquirer.prompt({
+      type: "list",
+      name: "artist",
+      message: "Select artist:",
+      choices: artists.map((a) => ({ name: `${a.name} (${a.followers.total} followers)`, value: a })),
+    });
+    artist = artistChoice.artist;
   }
 
-  const artistChoice = await inquirer.prompt({
-    type: "list",
-    name: "artist",
-    message: "Select artist:",
-    choices: artists.map((a) => ({ name: `${a.name} (${a.followers.total} followers)`, value: a })),
-  });
-
-  const artist = artistChoice.artist;
-
-  // Optionally write artist note in future; currently we proceed to albums
+  // Fetch releases for artist
   console.log(`\nFetching releases for ${artist.name}…`);
   const albums = await fetchArtistAlbums(artist.id, token);
   if (!albums.length) {
@@ -66,29 +76,146 @@ async function main() {
     process.exit(0);
   }
 
-  const albumChoice = await inquirer.prompt({
-    type: "list",
-    name: "album",
-    message: "Select release:",
-    choices: albums.map((al) => ({ name: `${al.name} (${al.release_date})`, value: al })),
-  });
+  // Album selection loop
+  let album = null;
+  while (!album) {
+    const albumChoice = await inquirer.prompt({
+      type: "list",
+      name: "album",
+      message: "Select release:",
+      choices: albums.map((al) => ({ name: `${al.name} (${al.release_date})`, value: al })),
+    });
+    if (!albumChoice.album) {
+      const { tryAgain } = await inquirer.prompt({
+        type: "confirm",
+        name: "tryAgain",
+        message: "No album selected. Try again?",
+        default: true,
+      });
+      if (!tryAgain) process.exit(0);
+      continue;
+    }
+    album = albumChoice.album;
+  }
 
-  const album = albumChoice.album;
   console.log(`\nPreparing frontmatter for: ${album.name}`);
 
-  // Option A: single filename per album (confirmed)
-  const { filenameInput } = await inquirer.prompt({
-    type: "input",
-    name: "filenameInput",
-    message: `Enter the filename for "${album.name}" (filename only, no leading slash):`,
-    validate: (v) => {
-      if (!v || !v.trim()) return "Please enter a filename";
-      if (v.trim().startsWith("/")) return "Absolute paths are not allowed here. Enter only filenames.";
-      return true;
-    },
-  });
+  /* ---------------- filename handling and existing-file detection ---------------- */
 
-  const filename = ensureMdExtension(filenameInput.trim());
+  // helper: normalize filename
+  function normalizeForFilename(s) {
+    return s
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "") // remove diacritics
+      .replace(/[^a-zA-Z0-9\s-_.]/g, "") // remove punctuation except - _ .
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .toLowerCase();
+  }
+
+  function truncateFilename(name, maxLen = 120) {
+    if (name.length <= maxLen) return name;
+    return name.slice(0, maxLen).replace(/-+$/, "");
+  }
+
+  // Find existing files only in the specified NOTES_ROOT folder (non-recursive)
+  async function findExistingFilesInFolder(folder, normalizedBase) {
+    const results = [];
+    try {
+      const entries = await fs.readdir(folder, { withFileTypes: true });
+      for (const e of entries) {
+        if (e.isFile()) {
+          const lower = e.name.toLowerCase();
+          if (lower.includes(normalizedBase) || lower === `${normalizedBase}.md`) {
+            results.push(path.join(folder, e.name));
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return results;
+  }
+
+  // Build a safe default filename
+  const suggestedBase = truncateFilename(normalizeForFilename(`${artist.name} ${album.name}`));
+  const suggestedFilename = ensureMdExtension(suggestedBase);
+
+  // Search only the NOTES_ROOT folder (non-recursive)
+  const existingMatches = await findExistingFilesInFolder(notesRoot, suggestedBase);
+
+  let filename = null;
+  while (true) {
+    if (existingMatches && existingMatches.length) {
+      const choice = await inquirer.prompt({
+        type: "list",
+        name: "fileChoice",
+        message: `Found ${existingMatches.length} existing file(s) in NOTES_ROOT that may match this album. Choose an action:`,
+        choices: [
+          ...existingMatches.map((p) => ({ name: `Use existing: ${path.relative(notesRoot, p)}`, value: p })),
+          { name: `Use suggested filename: ${suggestedFilename}`, value: "use-suggested" },
+          { name: "Enter custom filename", value: "custom" },
+          { name: "Abort", value: "abort" },
+        ],
+      });
+
+      if (choice.fileChoice === "use-suggested") {
+        filename = suggestedFilename;
+        break;
+      } else if (choice.fileChoice === "custom") {
+        // fall through to custom prompt below
+      } else if (choice.fileChoice === "abort") {
+        console.log("Aborted by user.");
+        process.exit(0);
+      } else {
+        // user selected an existing path
+        filename = path.relative(notesRoot, choice.fileChoice);
+        break;
+      }
+    }
+
+    // If no matches or user chose custom, prompt for filename with default
+    const { filenameInput } = await inquirer.prompt({
+      type: "input",
+      name: "filenameInput",
+      message: `Enter filename for "${album.name}" (or type q/quit/exit to abort):`,
+      default: suggestedFilename,
+      validate: (v) => {
+        if (!v) return "Please enter a filename or type q to abort";
+        const trimmed = v.trim();
+        if (["q", "quit", "exit"].includes(trimmed.toLowerCase())) return true;
+        if (trimmed.startsWith("/")) return "Absolute paths are not allowed. Enter a filename relative to NOTES_ROOT.";
+        return true;
+      },
+    });
+
+    const raw = filenameInput.trim();
+    if (["q", "quit", "exit"].includes(raw.toLowerCase())) {
+      console.log("Aborted by user.");
+      process.exit(0);
+    }
+
+    // normalize and ensure .md
+    filename = ensureMdExtension(raw);
+    // check if file exists in NOTES_ROOT (non-recursive)
+    const candidatePath = path.join(notesRoot, filename);
+    try {
+      await fs.access(candidatePath);
+      // file exists — confirm reuse
+      const { reuse } = await inquirer.prompt({
+        type: "confirm",
+        name: "reuse",
+        message: `${filename} already exists in NOTES_ROOT. Do you want to update this file?`,
+        default: true,
+      });
+      if (reuse) break;
+      // else loop and re-prompt
+    } catch {
+      // file does not exist — accept
+      break;
+    }
+  }
   const targetPath = path.join(notesRoot, filename);
 
   // Fetch full album details (tracks, images)
@@ -97,7 +224,19 @@ async function main() {
   // Build frontmatter object
   const frontmatter = buildAlbumFrontmatter(albumDetails, artist);
 
-  // Write file (create directories as needed)
+  // Confirm and write file
+  console.log(`\nWill write frontmatter to: ${targetPath}`);
+  const { confirmWrite } = await inquirer.prompt({
+    type: "confirm",
+    name: "confirmWrite",
+    message: "Proceed?",
+    default: true,
+  });
+  if (!confirmWrite) {
+    console.log("Cancelled by user.");
+    process.exit(0);
+  }
+
   try {
     await writeFrontmatterFile(targetPath, frontmatter);
     console.log(`\n✓ Wrote frontmatter to ${targetPath}`);

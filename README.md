@@ -31,6 +31,11 @@ Adds Spotify-derived frontmatter to album notes in your Obsidian vault.
 - cover: text
 - color: text
 
+## Notes about behavior
+- The CLI will now attempt to populate `genres` from album or artist data.
+- The CLI searches only the configured `NOTES_ROOT` folder (non-recursive) for existing files and offers to reuse them.
+- The CLI re-prompts on invalid input and accepts `q`, `quit`, or `exit` to abort.
+
 ## Usage
 1. Install dependencies:
 npm install
