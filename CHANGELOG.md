@@ -1,26 +1,46 @@
 # Changelog
 
-## [Unreleased] — 0.3.0
-**Summary:** Improved field population, safer filename handling, non-recursive NOTES_ROOT search, interactive re-prompting.
+All notable changes to this project are documented here.
+
+---
+
+## [0.4.0] — 2026‑03‑10
+### Summary
+Major UX improvements, partial filename search, interactive looping, newline‑clean prompts, and improved enrichment.
 
 ### Added
-- Populate `genres` from album or artist data when available.
-- Attempt to preserve `label` when present on album.
-- Interactive filename flow with suggested safe filename and existing-file detection.
-- Non-recursive search limited to `NOTES_ROOT` folder for existing-file detection.
-- Re-prompt loops for artist and album selection; accept `q/quit/exit` to abort.
-- ENHANCEMENTS.md added to track future ideas.
+- Partial filename search inside NOTES_ROOT (non‑recursive).
+- Suggested filename generation from artist + album.
+- Interactive loop: after writing a note, prompt to process another album.
+- Newline formatting for cleaner cursor placement.
+- ENHANCEMENTS.md file added.
+- README rewritten for clarity and accuracy.
 
 ### Changed
-- CLI now confirms before writing and will not overwrite without confirmation.
-- Version bumped to `0.3.0`.
+- Improved enrichment: genres merged from album + artist.
+- Label preserved when present.
+- Filename selection flow redesigned for safety and ergonomics.
 
 ### Fixed
-- Improved merging behavior and safer file writes.
+- Cursor placement issues.
+- Early exits replaced with re‑prompt loops.
+- NOTES_ROOT search limited to the configured folder only.
 
-## 0.2.0 — 2025-09-04
-- feat: NOTES_ROOT support and album frontmatter schema.
-- feat: .md auto-append only if missing; reject absolute filenames.
-- feat: One-filename-per-album UX.
-- fix: Non-destructive frontmatter merging; safe directory creation.
+---
 
+## [0.3.0] — 2026‑03‑09
+- Added NOTES_ROOT support.
+- Added `.md` auto‑append.
+- Added non‑destructive frontmatter merging.
+- Added reset flags.
+- Improved error handling.
+
+---
+
+## [0.2.0] — 2025‑09‑04
+- Initial stable CLI release.
+
+---
+
+## [0.1.0] — 2025‑08‑15
+- Prototype release.
