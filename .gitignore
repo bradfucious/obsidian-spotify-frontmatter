@@ -8,7 +8,7 @@ package-lock.json
 # Environment variables
 .env
 .env.local
-.env.*.local
+.env.*.loal
 
 # macOS
 .DS_Store
@@ -38,4 +38,6 @@ temp/
 *.tmp
 *.swp
 *.swo
-
+dist/
+.vscode/
+.DS_store
