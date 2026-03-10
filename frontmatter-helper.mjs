@@ -37,9 +37,9 @@ export function buildAlbumFrontmatter(albumDetails, artist) {
   // Label: Spotify exposes albumDetails.label as a string sometimes
   const label = albumDetails.label ? [albumDetails.label] : [];
 
-  // Producers and studio: Spotify does not reliably expose these.
-  // If available in albumDetails (custom fields), try to parse them; otherwise leave empty.
-  // Keep schema consistent and non-destructive.
+  // Producers and studio: Spotify rarely exposes these fields.
+  // If your source provides them (e.g., MusicBrainz, Discogs), we can merge them here.
+  // For now, attempt to use albumDetails.producers / albumDetails.studio if present.
   const producers = Array.isArray(albumDetails.producers) ? albumDetails.producers : [];
   const studio = Array.isArray(albumDetails.studio) ? albumDetails.studio : [];
 
