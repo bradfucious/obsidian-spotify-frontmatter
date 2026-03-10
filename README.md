@@ -1,6 +1,6 @@
 # Obsidian Spotify Frontmatter Generator
 
-A Node.js CLI utility that fetches Spotify metadata (artists, albums, singles) and inserts **non-destructive YAML frontmatter** into Obsidian notes.
+A Node.js CLI utility that fetches Spotify metadata (artists, albums, singles, compilations, appearances) and inserts **non-destructive YAML frontmatter** into Obsidian notes.
 
 This tool is designed for users who maintain music libraries, discographies, or media notes inside Obsidian and want accurate metadata without overwriting existing fields.
 
@@ -9,39 +9,25 @@ This tool is designed for users who maintain music libraries, discographies, or 
 ## Features
 
 - Search for artists by name  
-- Select one or more releases (albums/singles)  
+- Select one or more releases (albums, singles, compilations, appearances)  
 - Choose which notes to update  
 - Generates clean YAML frontmatter  
 - Merges frontmatter without overwriting existing fields  
+- Automatically creates missing notes  
 - Uses Spotify Client Credentials (Client ID + Secret)  
-- Automatically generates short-lived access tokens (no manual token pasting)  
+- Automatically generates short-lived access tokens  
 - Supports `--reset-auth` to reconfigure credentials  
-- Saves configuration to `.env` (gitignored)  
-- Modular, maintainable codebase  
-
----
-
-## Requirements
-
-### Node.js  
-- **Node.js 18 or higher**  
-
-### NPM Dependencies  
-
-Installed automatically via `npm install`:
-
-- `node-fetch@2` — Spotify API requests  
-- `inquirer` — interactive CLI prompts  
-- `js-yaml` — YAML parsing + serialization  
-- `dotenv` — `.env` loading  
+- Improved error reporting and validation  
+- Fully compatible with Obsidian vaults  
 
 ---
 
 ## Installation
 
-### 1. Clone or download the project
+Clone the repo:
 
 ```bash
-git clone https://github.com/yourusername/obsidian-spotify-frontmatter.git
+git clone https://github.com/YOURNAME/obsidian-spotify-frontmatter.git
 cd obsidian-spotify-frontmatter
+npm install
 

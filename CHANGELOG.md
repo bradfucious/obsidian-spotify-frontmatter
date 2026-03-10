@@ -1,47 +1,42 @@
-# Obsidian Spotify Frontmatter Generator
-
-A Node.js CLI utility that fetches Spotify metadata (artists, albums, singles) and inserts **non-destructive YAML frontmatter** into Obsidian notes.
-
-This tool is designed for users who maintain music libraries, discographies, or media notes inside Obsidian and want accurate metadata without overwriting existing fields.
 
 ---
 
-## Features
+# 📝 **4. Updated CHANGELOG.md (Final)**
 
-- Search for artists by name  
-- Select one or more releases (albums/singles)  
-- Choose which notes to update  
-- Generates clean YAML frontmatter  
-- Merges frontmatter without overwriting existing fields  
-- Uses Spotify Client Credentials (Client ID + Secret)  
-- Automatically generates short-lived access tokens (no manual token pasting)  
-- Supports `--reset-auth` to reconfigure credentials  
-- Saves configuration to `.env` (gitignored)  
-- Modular, maintainable codebase  
+```markdown
+# Changelog
 
----
+## 1.2.0 — Improved Album Fetching, Note Validation, and Error Reporting
 
-## Requirements
+### Added
+- Market parameter (`market=US`) to ensure complete album lists.
+- Support for all release groups: album, single, compilation, appears_on.
+- Improved error reporting for:
+  - empty album lists
+  - Spotify API failures
+  - invalid note paths
+- Automatic creation of missing note files.
+- Success/failure logging for each note written.
 
-### Node.js  
-- **Node.js 18 or higher**  
-
-### NPM Dependencies  
-
-Installed automatically via `npm install`:
-
-- `node-fetch@2` — Spotify API requests  
-- `inquirer` — interactive CLI prompts  
-- `js-yaml` — YAML parsing + serialization  
-- `dotenv` — `.env` loading  
+### Changed
+- Updated `chooseNotesForAlbum()` to validate and resolve paths.
+- Updated main loop to provide detailed write status messages.
 
 ---
 
-## Installation
+## 1.1.0 — Migration to Spotify Client Credentials Flow
 
-### 1. Clone or download the project
+### Added
+- Client ID + Secret authentication.
+- Automatic token generation and refresh.
+- `--reset-auth` flag.
+- `.env` storage for credentials and tokens.
 
-```bash
-git clone https://github.com/yourusername/obsidian-spotify-frontmatter.git
-cd obsidian-spotify-frontmatter
+### Changed
+- Removed deprecated Web API Console token flow.
+- Updated README and documentation.
+
+---
+
+## 1.0.0 — Initial Release
 

@@ -1,4 +1,5 @@
 // token-helper.mjs
+
 import fs from "fs";
 import path from "path";
 import inquirer from "inquirer";
@@ -7,12 +8,18 @@ import fetch from "node-fetch";
 
 const ENV_PATH = path.join(process.cwd(), ".env");
 
+/* -------------------------------------------------------
+   Load .env if present
+------------------------------------------------------- */
 function loadEnv() {
   if (fs.existsSync(ENV_PATH)) {
     dotenv.config({ path: ENV_PATH });
   }
 }
 
+/* -------------------------------------------------------
+   Parse .env manually so we can merge values safely
+------------------------------------------------------- */
 function parseEnvFile() {
   if (!fs.existsSync(ENV_PATH)) return {};
   const content = fs.readFileSync(ENV_PATH, "utf8");
@@ -29,6 +36,9 @@ function parseEnvFile() {
   return env;
 }
 
+/* -------------------------------------------------------
+   Write merged .env back to disk
+------------------------------------------------------- */
 function writeEnvFile(envObj) {
   const lines = [];
   for (const [key, value] of Object.entries(envObj)) {
@@ -36,10 +46,12 @@ function writeEnvFile(envObj) {
       lines.push(`${key}=${value}`);
     }
   }
-  const content = lines.join("\n") + "\n";
-  fs.writeFileSync(ENV_PATH, content, "utf8");
+  fs.writeFileSync(ENV_PATH, lines.join("\n") + "\n", "utf8");
 }
 
+/* -------------------------------------------------------
+   Merge new values into .env and process.env
+------------------------------------------------------- */
 function setEnvVars(updates) {
   const current = parseEnvFile();
   const merged = { ...current, ...updates };
@@ -47,15 +59,17 @@ function setEnvVars(updates) {
   Object.assign(process.env, updates);
 }
 
+/* -------------------------------------------------------
+   Prompt user for Client ID + Secret
+------------------------------------------------------- */
 async function promptForClientCredentials() {
   console.log(`
 To use this utility, you need a Spotify app (Client ID + Client Secret).
 
 1. Go to: https://developer.spotify.com/dashboard
 2. Log in with your Spotify account.
-3. Click "Create app" (or select an existing app you want to use).
-4. Give it a name (e.g., "Obsidian Frontmatter Utility").
-5. After creation, open the app and copy:
+3. Click "Create app" (or select an existing app).
+4. Copy:
    - Client ID
    - Client Secret
 `);
@@ -65,14 +79,14 @@ To use this utility, you need a Spotify app (Client ID + Client Secret).
       type: "input",
       name: "clientId",
       message: "Enter your Spotify Client ID:",
-      validate: (v) => (v.trim() ? true : "Client ID cannot be empty."),
+      validate: (v) => v.trim() ? true : "Client ID cannot be empty.",
     },
     {
       type: "password",
       name: "clientSecret",
       message: "Enter your Spotify Client Secret:",
       mask: "*",
-      validate: (v) => (v.trim() ? true : "Client Secret cannot be empty."),
+      validate: (v) => v.trim() ? true : "Client Secret cannot be empty.",
     },
   ]);
 
@@ -84,6 +98,9 @@ To use this utility, you need a Spotify app (Client ID + Client Secret).
   console.log("\nSaved Spotify Client ID and Secret to .env\n");
 }
 
+/* -------------------------------------------------------
+   Return stored token if still valid
+------------------------------------------------------- */
 function getStoredTokenIfValid() {
   const token = process.env.SPOTIFY_ACCESS_TOKEN;
   const expiresAt = process.env.SPOTIFY_TOKEN_EXPIRES_AT;
@@ -93,7 +110,6 @@ function getStoredTokenIfValid() {
   const now = Math.floor(Date.now() / 1000);
   const exp = parseInt(expiresAt, 10);
 
-  // Refresh 60 seconds before expiry
   if (Number.isNaN(exp) || now >= exp - 60) {
     return null;
   }
@@ -101,6 +117,9 @@ function getStoredTokenIfValid() {
   return token;
 }
 
+/* -------------------------------------------------------
+   Request new access token via Client Credentials Flow
+------------------------------------------------------- */
 async function requestNewAccessToken(clientId, clientSecret) {
   const body = new URLSearchParams();
   body.append("grant_type", "client_credentials");
@@ -125,7 +144,7 @@ async function requestNewAccessToken(clientId, clientSecret) {
 
   const data = await res.json();
   const accessToken = data.access_token;
-  const expiresIn = data.expires_in; // seconds
+  const expiresIn = data.expires_in;
 
   if (!accessToken || !expiresIn) {
     throw new Error("Spotify token response missing access_token or expires_in.");
@@ -141,6 +160,9 @@ async function requestNewAccessToken(clientId, clientSecret) {
   return accessToken;
 }
 
+/* -------------------------------------------------------
+   Main exported function
+------------------------------------------------------- */
 export async function getClientCredentialsToken({ resetAuthFlag = false } = {}) {
   loadEnv();
 
@@ -157,9 +179,7 @@ export async function getClientCredentialsToken({ resetAuthFlag = false } = {}) 
   }
 
   const existingToken = getStoredTokenIfValid();
-  if (existingToken) {
-    return existingToken;
-  }
+  if (existingToken) return existingToken;
 
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;

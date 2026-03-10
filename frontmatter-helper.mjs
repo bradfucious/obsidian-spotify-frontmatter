@@ -1,44 +1,58 @@
 // frontmatter-helper.mjs
+
 import fs from "fs";
 import path from "path";
 import yaml from "js-yaml";
 
-export function parseFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---\n?/);
-  if (!match) return { data: {}, body: content };
-  const data = yaml.load(match[1]) || {};
-  const body = content.slice(match[0].length);
+/* -------------------------------------------------------
+   Extract YAML frontmatter from a Markdown file
+------------------------------------------------------- */
+function parseFrontmatter(content) {
+  if (!content.startsWith("---")) return { data: {}, body: content };
+
+  const end = content.indexOf("\n---", 3);
+  if (end === -1) return { data: {}, body: content };
+
+  const raw = content.slice(3, end).trim();
+  const body = content.slice(end + 4).trimStart();
+
+  let data = {};
+  try {
+    data = yaml.load(raw) || {};
+  } catch {
+    console.warn("⚠️  Warning: Invalid YAML frontmatter detected. Preserving raw content.");
+  }
+
   return { data, body };
 }
 
-export function mergeFrontmatter(existing, incoming) {
-  const merged = { ...existing };
-  for (const [key, value] of Object.entries(incoming)) {
-    if (
-      merged[key] === undefined ||
-      merged[key] === null ||
-      merged[key] === ""
-    ) {
-      merged[key] = value;
-    }
-  }
-  return merged;
+/* -------------------------------------------------------
+   Merge new frontmatter without overwriting existing keys
+------------------------------------------------------- */
+function mergeFrontmatter(existing, incoming) {
+  return { ...incoming, ...existing };
 }
 
-export function writeFrontmatterToNote(notePath, incomingFm) {
-  const fullPath = path.join(process.cwd(), notePath);
-
-  if (!fs.existsSync(fullPath)) {
-    console.warn(`Note not found: ${notePath}`);
-    return;
+/* -------------------------------------------------------
+   Write merged frontmatter back to file
+------------------------------------------------------- */
+export function writeFrontmatterToNote(notePath, fm) {
+  const dir = path.dirname(notePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 
-  const content = fs.readFileSync(fullPath, "utf8");
-  const { data: existingFm, body } = parseFrontmatter(content);
-  const merged = mergeFrontmatter(existingFm, incomingFm);
-  const fmBlock = `---\n${yaml.dump(merged)}---\n`;
+  let content = "";
+  if (fs.existsSync(notePath)) {
+    content = fs.readFileSync(notePath, "utf8");
+  }
 
-  fs.writeFileSync(fullPath, fmBlock + body, "utf8");
-  console.log(`Updated frontmatter in: ${notePath}`);
+  const { data: existing, body } = parseFrontmatter(content);
+  const merged = mergeFrontmatter(existing, fm);
+
+  const yamlBlock = yaml.dump(merged, { lineWidth: -1 }).trim();
+  const newContent = `---\n${yamlBlock}\n---\n\n${body}`;
+
+  fs.writeFileSync(notePath, newContent, "utf8");
 }
 
