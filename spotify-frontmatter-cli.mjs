@@ -1,208 +1,191 @@
-// spotify-frontmatter-cli.mjs
-
+#!/usr/bin/env node
+import fs from "fs/promises";
+import path from "path";
+import os from "os";
 import fetch from "node-fetch";
 import inquirer from "inquirer";
-import fs from "fs";
-import path from "path";
+import dotenv from "dotenv";
+import { ensureNotesRoot, getEnv, setEnv, resetNotesRoot } from "./token-helper.mjs";
+import { buildAlbumFrontmatter, writeFrontmatterFile, ensureMdExtension } from "./frontmatter-helper.mjs";
 
-import { getClientCredentialsToken } from "./token-helper.mjs";
-import { writeFrontmatterToNote } from "./frontmatter-helper.mjs";
+dotenv.config();
 
-/* -------------------------------------------------------
-   Utility: detect --reset-auth flag
-------------------------------------------------------- */
-function hasResetAuthFlag() {
-  return process.argv.includes("--reset-auth");
-}
+const NOTES_ROOT = getEnv("NOTES_ROOT");
+const CLIENT_ID = getEnv("SPOTIFY_CLIENT_ID");
+const CLIENT_SECRET = getEnv("SPOTIFY_CLIENT_SECRET");
 
-/* -------------------------------------------------------
-   Utility: Spotify GET wrapper with error handling
-------------------------------------------------------- */
-async function spotifyGet(url, token) {
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `Spotify API error ${res.status} ${res.statusText}: ${text}`
-    );
+async function main() {
+  const argv = process.argv.slice(2);
+  if (argv.includes("--reset-root")) {
+    await resetNotesRoot();
+    process.exit(0);
+  }
+  if (argv.includes("--reset-auth")) {
+    await resetAuth();
+    process.exit(0);
   }
 
-  return res.json();
-}
+  const notesRoot = await ensureNotesRoot();
 
-/* -------------------------------------------------------
-   Step 1: Choose Artist
-------------------------------------------------------- */
-async function chooseArtist(token) {
-  const { artistQuery } = await inquirer.prompt({
+  // Ensure Spotify credentials exist
+  if (!CLIENT_ID || !CLIENT_SECRET) {
+    console.log("Spotify Client ID/Secret not found. Run with --reset-auth to set them.");
+    await promptForAuth();
+  }
+
+  const token = await getClientCredentialsToken();
+
+  // Artist search
+  const { artistName } = await inquirer.prompt({
     type: "input",
-    name: "artistQuery",
+    name: "artistName",
     message: "Artist name:",
-    validate: (v) => v.trim().length > 0 || "Please enter an artist name.",
+    validate: (v) => (v && v.trim().length ? true : "Please enter an artist name"),
   });
 
-  let data;
-  try {
-    data = await spotifyGet(
-      `https://api.spotify.com/v1/search?type=artist&q=${encodeURIComponent(
-        artistQuery
-      )}&limit=10&market=US`,
-      token
-    );
-  } catch (err) {
-    throw new Error(`Failed to search for artist: ${err.message}`);
+  const artists = await searchArtist(artistName, token);
+  if (!artists.length) {
+    console.log("No artists found.");
+    process.exit(1);
   }
 
-  const items = data.artists?.items || [];
-  if (!items.length) {
-    throw new Error(`No artists found for query: "${artistQuery}".`);
-  }
-
-  const { artist } = await inquirer.prompt({
+  const artistChoice = await inquirer.prompt({
     type: "list",
     name: "artist",
     message: "Select artist:",
-    choices: items.map((a) => ({
-      name: `${a.name} (${a.followers.total} followers)`,
-      value: a,
-    })),
+    choices: artists.map((a) => ({ name: `${a.name} (${a.followers.total} followers)`, value: a })),
   });
 
-  return artist;
-}
+  const artist = artistChoice.artist;
 
-/* -------------------------------------------------------
-   Step 2: Choose Albums (PATCH 1 APPLIED)
-------------------------------------------------------- */
-async function chooseAlbums(artist, token) {
+  // Optionally write artist note in future; currently we proceed to albums
   console.log(`\nFetching releases for ${artist.name}…`);
-
-  const url =
-    `https://api.spotify.com/v1/artists/${artist.id}/albums` +
-    `?include_groups=album,single,compilation,appears_on` +
-    `&market=US&limit=50`;
-
-  let data;
-  try {
-    data = await spotifyGet(url, token);
-  } catch (err) {
-    throw new Error(`Failed to fetch albums: ${err.message}`);
-  }
-
-  const albums = data.items || [];
-
+  const albums = await fetchArtistAlbums(artist.id, token);
   if (!albums.length) {
-    throw new Error(
-      `Spotify returned zero releases for ${artist.name}. ` +
-        `Try a different artist or check if the Spotify API is filtering by region.`
-    );
+    console.log("No releases found for this artist.");
+    process.exit(0);
   }
 
-  const { selected } = await inquirer.prompt({
-    type: "checkbox",
-    name: "selected",
-    message: "Select releases:",
-    choices: albums.map((a) => ({
-      name: `${a.name} (${a.release_date})`,
-      value: a,
-    })),
-    validate: (arr) =>
-      arr.length > 0 || "You must select at least one release.",
+  const albumChoice = await inquirer.prompt({
+    type: "list",
+    name: "album",
+    message: "Select release:",
+    choices: albums.map((al) => ({ name: `${al.name} (${al.release_date})`, value: al })),
   });
 
-  return selected;
-}
-
-/* -------------------------------------------------------
-   Step 3: Build Frontmatter Object
-------------------------------------------------------- */
-function buildAlbumFrontmatter(album, artist) {
-  return {
-    type: "album",
-    title: album.name,
-    artist: artist.name,
-    spotify_id: album.id,
-    spotify_url: album.external_urls?.spotify || "",
-    release_date: album.release_date,
-    total_tracks: album.total_tracks,
-    cover_image: album.images?.[0]?.url || "",
-  };
-}
-
-/* -------------------------------------------------------
-   Step 4: Choose Note Paths (PATCH 2 APPLIED)
-------------------------------------------------------- */
-async function chooseNotesForAlbum(album) {
+  const album = albumChoice.album;
   console.log(`\nPreparing frontmatter for: ${album.name}`);
 
-  const { notePaths } = await inquirer.prompt({
+  // Option A: single filename per album (confirmed)
+  const { filenameInput } = await inquirer.prompt({
     type: "input",
-    name: "notePaths",
-    message:
-      `Enter one or more note paths for "${album.name}" ` +
-      `(comma-separated, relative to your vault root):`,
-    validate: (input) =>
-      input.trim().length > 0 ||
-      "You must enter at least one note path.",
+    name: "filenameInput",
+    message: `Enter the filename for "${album.name}" (filename only, no leading slash):`,
+    validate: (v) => {
+      if (!v || !v.trim()) return "Please enter a filename";
+      if (v.trim().startsWith("/")) return "Absolute paths are not allowed here. Enter only filenames.";
+      return true;
+    },
   });
 
-  const paths = notePaths
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const filename = ensureMdExtension(filenameInput.trim());
+  const targetPath = path.join(notesRoot, filename);
 
-  const validated = [];
+  // Fetch full album details (tracks, images)
+  const albumDetails = await fetchAlbumDetails(album.id, token);
 
-  for (const p of paths) {
-    const full = path.resolve(process.cwd(), p);
+  // Build frontmatter object
+  const frontmatter = buildAlbumFrontmatter(albumDetails, artist);
 
-    if (!fs.existsSync(full)) {
-      console.log(
-        `⚠️  Warning: File does not exist yet: ${p}\n` +
-          `    It will be created automatically.`
-      );
-    }
-
-    validated.push(full);
-  }
-
-  return validated;
-}
-
-/* -------------------------------------------------------
-   MAIN WORKFLOW (PATCH 3 APPLIED HERE)
-------------------------------------------------------- */
-async function main() {
+  // Write file (create directories as needed)
   try {
-    const resetAuthFlag = hasResetAuthFlag();
-    const token = await getClientCredentialsToken({ resetAuthFlag });
-
-    const artist = await chooseArtist(token);
-    const albums = await chooseAlbums(artist, token);
-
-    // 🔥 THIS IS THE LOOP YOU WERE LOOKING FOR
-    for (const album of albums) {
-      const fm = buildAlbumFrontmatter(album, artist);
-      const notePaths = await chooseNotesForAlbum(album);
-
-      for (const notePath of notePaths) {
-        try {
-          writeFrontmatterToNote(notePath, fm);
-          console.log(`✓ Updated frontmatter in: ${notePath}`);
-        } catch (err) {
-          console.error(`✗ Failed to update ${notePath}: ${err.message}`);
-        }
-      }
-    }
-
-    console.log("\nAll done.\n");
-  } catch (e) {
-    console.error("\n❌ Fatal Error:", e.message, "\n");
+    await writeFrontmatterFile(targetPath, frontmatter);
+    console.log(`\n✓ Wrote frontmatter to ${targetPath}`);
+  } catch (err) {
+    console.error(`✗ Failed to update ${targetPath}: ${err.message}`);
   }
+
+  console.log("\nAll done.");
+  process.exit(0);
 }
 
-main();
+/* ----------------- Spotify helpers ----------------- */
+
+async function getClientCredentialsToken() {
+  const clientId = getEnv("SPOTIFY_CLIENT_ID");
+  const clientSecret = getEnv("SPOTIFY_CLIENT_SECRET");
+  if (!clientId || !clientSecret) {
+    throw new Error("Missing Spotify credentials. Run with --reset-auth to set them.");
+  }
+  const tokenUrl = "https://accounts.spotify.com/api/token";
+  const body = new URLSearchParams({ grant_type: "client_credentials" });
+  const res = await fetch(tokenUrl, {
+    method: "POST",
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Failed to get token: ${res.status} ${txt}`);
+  }
+  const data = await res.json();
+  return data.access_token;
+}
+
+async function searchArtist(query, token) {
+  const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=artist&limit=10`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.artists.items;
+}
+
+async function fetchArtistAlbums(artistId, token) {
+  const url = `https://api.spotify.com/v1/artists/${artistId}/albums?include_groups=album,single,appears_on,compilation&limit=50`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) return [];
+  const data = await res.json();
+  // Deduplicate by name+release_date
+  const seen = new Set();
+  const items = [];
+  for (const it of data.items) {
+    const key = `${it.name}::${it.release_date}`;
+    if (!seen.has(key)) {
+      seen.add(key);
+      items.push(it);
+    }
+  }
+  return items;
+}
+
+async function fetchAlbumDetails(albumId, token) {
+  const url = `https://api.spotify.com/v1/albums/${albumId}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error("Failed to fetch album details");
+  return res.json();
+}
+
+/* ----------------- Auth helpers ----------------- */
+
+async function promptForAuth() {
+  const answers = await inquirer.prompt([
+    { type: "input", name: "SPOTIFY_CLIENT_ID", message: "Enter Spotify Client ID:" },
+    { type: "input", name: "SPOTIFY_CLIENT_SECRET", message: "Enter Spotify Client Secret:" },
+  ]);
+  await setEnv("SPOTIFY_CLIENT_ID", answers.SPOTIFY_CLIENT_ID);
+  await setEnv("SPOTIFY_CLIENT_SECRET", answers.SPOTIFY_CLIENT_SECRET);
+  console.log("Saved Spotify credentials to .env");
+}
+
+async function resetAuth() {
+  await promptForAuth();
+}
+
+main().catch((err) => {
+  console.error("Fatal:", err.message);
+  process.exit(1);
+});
 

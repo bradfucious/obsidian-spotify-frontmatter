@@ -8,10 +8,10 @@
     "start": "node spotify-frontmatter-cli.mjs"
   },
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "inquirer": "^9.2.15",
-    "js-yaml": "^4.1.0",
-    "node-fetch": "2.7.0"
+    "dotenv": "^16.6.1",
+    "inquirer": "^9.3.8",
+    "js-yaml": "^4.1.1",
+    "node-fetch": "^2.7.0"
   },
   "engines": {
     "node": ">=18"
@@ -27,4 +27,3 @@
   "author": "Brad",
   "license": "MIT"
 }
-

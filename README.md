@@ -1,33 +1,48 @@
-# Obsidian Spotify Frontmatter Generator
+# obsidian-spotify-frontmatter
 
-A Node.js CLI utility that fetches Spotify metadata (artists, albums, singles, compilations, appearances) and inserts **non-destructive YAML frontmatter** into Obsidian notes.
-
-This tool is designed for users who maintain music libraries, discographies, or media notes inside Obsidian and want accurate metadata without overwriting existing fields.
-
----
+Adds Spotify-derived frontmatter to album notes in your Obsidian vault.
 
 ## Features
+- Configure a single NOTES_ROOT directory for all generated notes.
+- One filename per album (prompted).
+- `.md` appended automatically only if missing.
+- Absolute paths rejected; filenames are resolved relative to NOTES_ROOT.
+- Non-destructive frontmatter merging (existing fields preserved).
+- Album frontmatter schema matches your vault (see below).
 
-- Search for artists by name  
-- Select one or more releases (albums, singles, compilations, appearances)  
-- Choose which notes to update  
-- Generates clean YAML frontmatter  
-- Merges frontmatter without overwriting existing fields  
-- Automatically creates missing notes  
-- Uses Spotify Client Credentials (Client ID + Secret)  
-- Automatically generates short-lived access tokens  
-- Supports `--reset-auth` to reconfigure credentials  
-- Improved error reporting and validation  
-- Fully compatible with Obsidian vaults  
+## Album frontmatter schema
+- type: text
+- title: text
+- artist: text
+- release_date: date
+- original_release: date
+- label: list(string)
+- genres: list(string)
+- duration: text
+- discs: number
+- studio: list(string)
+- producers: list(string)
+- tracklist: list(string)
+- emotional_resonance: list(string)
+- ikigai_alignment: list(string)
+- bonus_content: list(string)
+- updated: date
+- sticker: text
+- cover: text
+- color: text
 
----
-
-## Installation
-
-Clone the repo:
-
-```bash
-git clone https://github.com/YOURNAME/obsidian-spotify-frontmatter.git
-cd obsidian-spotify-frontmatter
+## Usage
+1. Install dependencies:
 npm install
+2. First run:
+You will be prompted to enter:
+- NOTES_ROOT (absolute path to your notes directory)
+- Spotify Client ID and Client Secret (if not already in `.env`)
+3. To change the notes root later:
+node spotify-frontmatter-cli.mjs –reset-root
+4. To reset Spotify credentials:
+node spotify-frontmatter-cli.mjs –reset-auth
 
+## Credits
+- **Bradford Douglas Hill (Brad)** — original project owner and schema design
+- **Microsoft Copilot** — implementation and integration assistance
