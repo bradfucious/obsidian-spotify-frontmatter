@@ -1,0 +1,30 @@
+{
+  "name": "obsidian-spotify-frontmatter",
+  "version": "1.0.0",
+  "description": "A CLI utility that fetches Spotify metadata and inserts non-destructive YAML frontmatter into Obsidian notes.",
+  "type": "module",
+  "main": "spotify-frontmatter-cli.mjs",
+  "scripts": {
+    "start": "node spotify-frontmatter-cli.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "inquirer": "^9.2.15",
+    "js-yaml": "^4.1.0",
+    "node-fetch": "2.7.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "obsidian",
+    "spotify",
+    "frontmatter",
+    "yaml",
+    "cli",
+    "metadata"
+  ],
+  "author": "Brad",
+  "license": "MIT"
+}
+
