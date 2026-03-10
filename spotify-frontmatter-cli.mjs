@@ -1,22 +1,22 @@
 // spotify-frontmatter-cli.mjs
 import fetch from "node-fetch";
 import inquirer from "inquirer";
-import { getSpotifyToken } from "./token-helper.mjs";
-import {
-  writeFrontmatterToNote,
-} from "./frontmatter-helper.mjs";
+import { getClientCredentialsToken } from "./token-helper.mjs";
+import { writeFrontmatterToNote } from "./frontmatter-helper.mjs";
 
-const SPOTIFY_TOKEN = await getSpotifyToken();
+function hasResetAuthFlag() {
+  return process.argv.includes("--reset-auth");
+}
 
-async function spotifyGet(url) {
+async function spotifyGet(url, token) {
   const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${SPOTIFY_TOKEN}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return res.json();
 }
 
-async function chooseArtist() {
+async function chooseArtist(token) {
   const { artistQuery } = await inquirer.prompt({
     type: "input",
     name: "artistQuery",
@@ -26,7 +26,8 @@ async function chooseArtist() {
   const data = await spotifyGet(
     `https://api.spotify.com/v1/search?type=artist&q=${encodeURIComponent(
       artistQuery
-    )}&limit=10`
+    )}&limit=10`,
+    token
   );
 
   const items = data.artists.items;
@@ -45,9 +46,10 @@ async function chooseArtist() {
   return artist;
 }
 
-async function chooseAlbums(artist) {
+async function chooseAlbums(artist, token) {
   const data = await spotifyGet(
-    `https://api.spotify.com/v1/artists/${artist.id}/albums?include_groups=album,single&limit=20`
+    `https://api.spotify.com/v1/artists/${artist.id}/albums?include_groups=album,single&limit=20`,
+    token
   );
 
   const albums = data.items;
@@ -83,8 +85,7 @@ async function chooseNotesForAlbum(album) {
   const { notePaths } = await inquirer.prompt({
     type: "input",
     name: "notePaths",
-    message:
-      `Enter note path(s) for "${album.name}" (comma-separated, relative to vault):`,
+    message: `Enter note path(s) for "${album.name}" (comma-separated, relative to vault):`,
   });
 
   return notePaths
@@ -95,8 +96,11 @@ async function chooseNotesForAlbum(album) {
 
 async function main() {
   try {
-    const artist = await chooseArtist();
-    const albums = await chooseAlbums(artist);
+    const resetAuthFlag = hasResetAuthFlag();
+    const token = await getClientCredentialsToken({ resetAuthFlag });
+
+    const artist = await chooseArtist(token);
+    const albums = await chooseAlbums(artist, token);
 
     for (const album of albums) {
       const fm = buildAlbumFrontmatter(album, artist);
