@@ -18,28 +18,34 @@ export function buildAlbumFrontmatter(albumDetails, artist) {
   };
 
   // Build tracklist (names)
-  const tracklist = (albumDetails.tracks && albumDetails.tracks.items)
-    ? albumDetails.tracks.items.map((t) => t.name)
-    : [];
+  const tracklist =
+    albumDetails.tracks && albumDetails.tracks.items
+      ? albumDetails.tracks.items.map((t) => t.name)
+      : [];
 
   // Compute approximate duration by summing track durations if available
   let durationText = "";
   if (albumDetails.tracks && albumDetails.tracks.items && albumDetails.tracks.items.length) {
-    const totalMs = albumDetails.tracks.items.reduce((acc, t) => acc + (t.duration_ms || 0), 0);
+    const totalMs = albumDetails.tracks.items.reduce(
+      (acc, t) => acc + (t.duration_ms || 0),
+      0
+    );
     durationText = msToDuration(totalMs);
   }
 
   // Genres: prefer album genres, fall back to artist genres
-  const genres = Array.isArray(albumDetails.genres) && albumDetails.genres.length
-    ? albumDetails.genres
-    : (artist && Array.isArray(artist.genres) ? artist.genres : []);
+  const genres =
+    Array.isArray(albumDetails.genres) && albumDetails.genres.length
+      ? albumDetails.genres
+      : artist && Array.isArray(artist.genres)
+      ? artist.genres
+      : [];
 
   // Label: Spotify exposes albumDetails.label as a string sometimes
   const label = albumDetails.label ? [albumDetails.label] : [];
 
   // Producers and studio: Spotify rarely exposes these fields.
   // If your source provides them (e.g., MusicBrainz, Discogs), we can merge them here.
-  // For now, attempt to use albumDetails.producers / albumDetails.studio if present.
   const producers = Array.isArray(albumDetails.producers) ? albumDetails.producers : [];
   const studio = Array.isArray(albumDetails.studio) ? albumDetails.studio : [];
 
@@ -61,7 +67,8 @@ export function buildAlbumFrontmatter(albumDetails, artist) {
     bonus_content: [],
     updated: "",
     sticker: "",
-    cover: albumDetails.images && albumDetails.images[0] ? albumDetails.images[0].url : "",
+    cover:
+      albumDetails.images && albumDetails.images[0] ? albumDetails.images[0].url : "",
     color: "",
   };
 
