@@ -1,46 +1,23 @@
-# Changelog
+# Changelog — obsidian-spotify-frontmatter
 
-All notable changes to this project are documented here.
+All changes by Bradford Douglas Hill ([@bradfucious](https://github.com/bradfucious)).
 
 ---
 
-## [0.4.0] — 2026‑03‑10
-### Summary
-Major UX improvements, partial filename search, interactive looping, newline‑clean prompts, and improved enrichment.
+## [1.0.0] — 2026-03-10
 
 ### Added
-- Partial filename search inside NOTES_ROOT (non‑recursive).
-- Suggested filename generation from artist + album.
-- Interactive loop: after writing a note, prompt to process another album.
-- Newline formatting for cleaner cursor placement.
-- ENHANCEMENTS.md file added.
-- README rewritten for clarity and accuracy.
+- Initial release: Node.js CLI utility for fetching Spotify metadata and inserting YAML frontmatter into Obsidian notes
+- Artist search by name via Spotify API
+- Album/single selection — interactive CLI prompts via `inquirer`
+- Non-destructive frontmatter merge — existing fields are never overwritten
+- Spotify Client Credentials flow — no manual token pasting required
+- Auto-generated short-lived access tokens
+- `--reset-auth` flag to reconfigure credentials
+- `.env`-based credential storage (gitignored)
+- Modular codebase: `spotify-frontmatter-cli.mjs`, `frontmatter-helper.mjs`, `token-helper.mjs`
+- Supports Node.js 18+
 
-### Changed
-- Improved enrichment: genres merged from album + artist.
-- Label preserved when present.
-- Filename selection flow redesigned for safety and ergonomics.
-
-### Fixed
-- Cursor placement issues.
-- Early exits replaced with re‑prompt loops.
-- NOTES_ROOT search limited to the configured folder only.
-
----
-
-## [0.3.0] — 2026‑03‑09
-- Added NOTES_ROOT support.
-- Added `.md` auto‑append.
-- Added non‑destructive frontmatter merging.
-- Added reset flags.
-- Improved error handling.
-
----
-
-## [0.2.0] — 2025‑09‑04
-- Initial stable CLI release.
-
----
-
-## [0.1.0] — 2025‑08‑15
-- Prototype release.
+### Known Limitations
+- Album/single support only — artist-level notes not yet supported
+- CLI only — not yet an Obsidian plugin
