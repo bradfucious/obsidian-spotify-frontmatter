@@ -4,13 +4,7 @@ import path from "path";
 import fetch from "node-fetch";
 import inquirer from "inquirer";
 import dotenv from "dotenv";
-import {
-  ensureNotesRoot,
-  getEnv,
-  setEnv,
-  resetNotesRoot,
-  resetAuth,
-} from "./token-helper.mjs";
+import { ensureNotesRoot, getEnv, setEnv, resetNotesRoot } from "./token-helper.mjs";
 import {
   buildAlbumFrontmatter,
   buildArtistFrontmatter,
@@ -33,7 +27,14 @@ async function main() {
     process.exit(0);
   }
   if (argv.includes("--reset-auth")) {
-    await resetAuth();
+    // token-helper.mjs does not export resetAuth; clear stored credentials instead.
+    try {
+      await setEnv("SPOTIFY_CLIENT_ID", "");
+      await setEnv("SPOTIFY_CLIENT_SECRET", "");
+      console.log("Cleared Spotify credentials from .env. Run the CLI to set new credentials.");
+    } catch (err) {
+      console.error("Failed to clear Spotify credentials:", err.message || err);
+    }
     process.exit(0);
   }
 

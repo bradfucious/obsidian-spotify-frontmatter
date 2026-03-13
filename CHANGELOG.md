@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 ---
 
+[0.6.1] — 2026-03-13
+Fixed
+- Fix ESM import error: align `spotify-frontmatter-cli.mjs` imports with `token-helper.mjs` exports and implement `--reset-auth` to clear credentials via `setEnv`.
+
+---
+
 [0.6.0] — 2026-03-13
 
 Summary
