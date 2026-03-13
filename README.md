@@ -1,55 +1,88 @@
-# Obsidian Spotify Frontmatter Utility
-
-A Node.js command‑line tool that fetches album metadata from Spotify and writes structured YAML frontmatter into notes inside your Obsidian vault. Designed for safety, reproducibility, and ergonomic workflows.
-
+Obsidian Spotify Frontmatter Utility
+A Node.js command-line tool that fetches album and artist metadata from Spotify and writes structured YAML frontmatter into notes inside your Obsidian vault. Designed for safety, reproducibility, and ergonomic workflows.
 ---
 
-## Features
+Features
 
-### 🎵 Spotify Metadata Enrichment
-- Fetches album metadata using Spotify’s Client Credentials API.
-- Populates:
-  - title  
-  - artist  
-  - release_date  
-  - original_release  
-  - label  
-  - genres (merged from album + artist)  
-  - duration (computed from tracklist)  
-  - discs  
-  - tracklist  
-  - cover image URL  
-- Preserves existing frontmatter (non‑destructive merge).
+Spotify Metadata Enrichment
 
-### 🗂 NOTES_ROOT System
-- All notes are created inside a single configured folder.
-- NOTES_ROOT is stored in `.env` and can be reset with:
+• Fetches album and artist metadata using Spotify’s Client Credentials API.
+• Album frontmatter fields:
+	◦ title
+	◦ artist
+	◦ release_date
+	◦ original_release
+	◦ label
+	◦ genres (merged from album + artist)
+	◦ duration (computed from tracklist)
+	◦ discs
+	◦ tracklist
+	◦ cover image URL
+• Artist frontmatter fields:
+	◦ type
+	◦ name
+	◦ origin
+	◦ active_years
+	◦ genres
+	◦ labels
+	◦ notable_releases
+	◦ spotify_url
+	◦ emotional_resonance
+	◦ ikigai_alignment
+	◦ followers
+	◦ popularity
+	◦ images (Spotify images array)
+	◦ cover (first Spotify image URL by default)
+	◦ created and updated dates (MM-DD-YYYY)
+
+NOTES_ROOT System
+• All notes are created inside a single configured folder.
+• NOTES_ROOT is stored in .env and can be reset with:
 node spotify-frontmatter-cli.mjs –reset-root
 
+Filename Handling
+• Suggested filename automatically generated from artist + album for albums and {artist}.md for artist notes.
+• Partial filename search:
+	◦ Type any substring → utility shows matching files in NOTES_ROOT.
+• Non-recursive search (fast and safe) by default.
+• Optional --deep-search flag enables recursive search across subfolders.
+• .md auto-appended only if missing.
+• Absolute paths rejected.
+• Artist filenames preserve spaces and capitalization; album filenames use the slug-style pattern used previously.
 
-### 📝 Filename Handling
-- Suggested filename automatically generated from `artist + album`.
-- Partial filename search:
-- Type any substring → utility shows matching files in NOTES_ROOT.
-- Non‑recursive search (fast and safe).
-- `.md` auto‑appended only if missing.
-- Absolute paths rejected.
+Artist Mode
+• After selecting an artist, choose between creating an artist note or an album note.
+• Artist note behavior:
+	◦ Builds canonical artist frontmatter in the project’s preferred YAML order.
+	◦ Enrichment fields included: followers, popularity, images.
+	◦ cover defaults to the first Spotify image URL.
+	◦ notable_releases is an empty list by default and can be filled manually or via future bulk import.
+	◦ Filename template: {artist}.md with the same normalization logic used for albums.
+	◦ Image handling: prompt to use Spotify URL or opt‑in to download to NOTES_ROOT/assets/covers/.
 
-### 🔁 Interactive Loop
-- After writing a note, the utility asks whether to process another album.
-- Clean newline formatting for all prompts.
+Interactive Loop and Prompt UX
+• Prompts use a consistent, short format:
+	◦ Context printed above the prompt (album/artist, suggested filename).
+	◦ Short prompt line on its own (no wrapping).
+	◦ (Type q to quit) shown only where quitting is meaningful.
+• Cursor rendering issues resolved by avoiding long, wrapped prompt messages.
 
-### 🔐 Safe Behavior
-- Never overwrites without confirmation.
-- Never writes outside NOTES_ROOT.
-- `.env` is ignored by Git; `.env.example` provided.
+CLI Flags
+• --deep-search enable recursive filename search.
+• --dry-run preview frontmatter without writing.
+• --artist start directly in artist mode.
+• --reset-root reset NOTES_ROOT.
+• --reset-auth reset Spotify credentials.
 
+Safe Behavior
+• Never overwrites without confirmation.
+• Never writes outside NOTES_ROOT.
+• .env is ignored by Git; .env.example provided.
 ---
 
-## Installation
+Installation
 npm install
-
-## Dependencies:
+Dependencies:
 • inquirer
 • node-fetch
 • dotenv
@@ -57,20 +90,33 @@ npm install
 
 ---
 
-## Usage
+Usage
 
-### First Run
+First Run
 node spotify-frontmatter-cli.mjs
+
 You will be prompted for:
 • NOTES_ROOT (absolute path)
 • Spotify Client ID
 • Spotify Client Secret
 
-### Resetting Settings
-node spotify-frontmatter-cli.mjs --reset-root
-node spotify-frontmatter-cli.mjs --reset-auth
+Creating an Artist Note
+1. Run the CLI.
+2. Choose Artist note when prompted.
+3. Search for the artist and select the correct result.
+4. Confirm or edit the suggested filename.
+5. Choose whether to use Spotify image URL or download the image (download is opt‑in).
+6. Confirm write.
 
-### Album Frontmatter Schema
+Resetting Settings
+node spotify-frontmatter-cli.mjs –reset-root
+node spotify-frontmatter-cli.mjs –reset-auth
+Deep search (recursive)
+node spotify-frontmatter-cli.mjs –deep-search
+
+---
+
+Album Frontmatter Schema
 type: album
 title: string
 artist: string
@@ -91,11 +137,36 @@ sticker: string
 cover: string
 color: string
 
-## Roadmap
+---
+
+Artist Frontmatter Schema
+type: artist
+name: string
+origin: string
+active_years: string
+genres: list(string)
+labels: list(string)
+notable_releases: list(string)
+spotify_url: string
+emotional_resonance: list(string)
+ikigai_alignment: list(string)
+followers: integer
+popularity: integer
+images: list(object)
+cover: string
+created: date
+modified: date
+updated: date
+sticker: string
+color: string
+
+---
+Roadmap
+
 See ENHANCEMENTS.md for the full roadmap.
 
 ---
 
-## Credits
+Credits
 • Bradford Douglas Hill (Brad) — project owner, schema designer, workflow architect
 • Microsoft Copilot — implementation partner, CLI design, UX, and documentation
