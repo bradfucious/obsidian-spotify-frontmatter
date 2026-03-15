@@ -2,7 +2,6 @@ import fs from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
 import fetch from "node-fetch";
-const existing = yaml.load(match[1], { schema: yaml.FAILSAFE_SCHEMA }) || {};
 
 /**
  * Helper utilities for building and writing frontmatter for albums and artists.
@@ -193,7 +192,7 @@ export async function writeFrontmatterFile(targetPath, frontmatterObj) {
   try {
     const txt = await fs.readFile(targetPath, "utf8");
     const match = txt.match(/^---\n([\s\S]*?)\n---\n?/);
-    existing = match ? yaml.load(match[1]) || {} : {};
+    existing = match ? yaml.load(match[1], { schema: yaml.FAILSAFE_SCHEMA }) || {} : {};
   } catch {
     existing = {};
   }

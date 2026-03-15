@@ -1,0 +1,6 @@
+# Core maintainer
+* @bradfucious
+
+# Critical paths
+frontmatter-helper.mjs @bradfucious
+spotify-frontmatter-cli.mjs @bradfucious
