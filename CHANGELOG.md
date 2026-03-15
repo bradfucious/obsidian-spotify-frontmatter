@@ -1,91 +1,118 @@
-# Enhancements Roadmap
-
-This document tracks potential improvements, future features, and workflow refinements for the Obsidian Spotify Frontmatter Utility. Items are not commitments; they represent opportunities for future development.
-
----
-
-## Completed Enhancements
-- Recursive filename search (`--deep-search`)
-- MusicBrainz enrichment for album metadata
-- Artist frontmatter generation
-- Lint cleanup (ESLint)
-- Static analysis cleanup (Semgrep)
-- YAML schema hardening (`FAILSAFE_SCHEMA`)
-- Regex normalization safety improvements
+# Changelog
+All notable changes to this project are documented here.
 
 ---
 
-## Added
-- Initial unit test suite using Vitest
+## [0.6.1] — 2026‑03‑13
+### Summary
+Artist Mode refinements, enrichment fixes, documentation updates, and reset‑auth bugfix.
+
+### Added
+- Followers, popularity, and images enrichment for artists
+- Artist Mode documentation updates
+- Additional image handling logic
+
+### Changed
+- Improved Artist Mode UX
+- Updated README and CHANGELOG
+
+### Fixed
+- `--reset-auth` now correctly clears stored credentials
+- Minor schema alignment fixes
+
+---
+
+## [0.6.0] — 2026‑03‑13
+### Summary
+Introduced Artist Mode with full frontmatter generation and enrichment.
+
+### Added
+- Artist Mode (`--artist`)
+- Artist frontmatter builder with canonical ordering
+- Image handling prompt (Spotify URL vs. local download)
+- Optional image download to `NOTES_ROOT/assets/covers/`
+- `--dry-run` flag
+- Move‑after‑write enhancement (configurable via `.env`)
+
+### Changed
+- Standardized prompt formatting to avoid cursor drift
+- Updated README with Artist Mode documentation
+- Improved filename normalization for artist notes
+
+### Fixed
+- Cursor placement issues in terminals when prompts wrapped
+
+---
+
+## [0.5.0] — 2026‑03‑10
+### Summary
+Major CLI UX improvements and prep for MusicBrainz integration.
+
+### Added
+- Partial filename search inside `NOTES_ROOT` (non‑recursive)
+- Interactive looping after writing notes
+- Preparatory enhancements for MusicBrainz enrichment
+
+### Changed
+- Cursor rendering and prompt formatting improvements
+- Cleaner newline handling
+- Improved error messages
+
+---
+
+## [0.4.0] — 2026‑03‑10
+### Summary
+Major UX improvements, partial filename search, interactive looping, newline‑clean prompts, and improved enrichment.
+
+### Added
+- Partial filename search inside NOTES_ROOT (non‑recursive)
+- Suggested filename generation from artist + album
+- Interactive loop: after writing a note, prompt to process another album
+- Newline formatting for cleaner cursor placement
+- ENHANCEMENTS.md file added
+- README rewritten for clarity and accuracy
+
+### Changed
+- Improved enrichment: genres merged from album + artist
+- Label preserved when present
+- Filename selection flow redesigned for safety and ergonomics
+
+### Fixed
+- Cursor placement issues
+- Early exits replaced with re‑prompt loops
+- NOTES_ROOT search limited to the configured folder only
+
+---
+
+## [0.3.0] — 2026‑03‑09
+### Added
+- NOTES_ROOT support
+- `.md` auto‑append
+- Non‑destructive frontmatter merging
+- Reset flags
+- Improved error handling
+
+---
+
+## [0.2.0] — 2025‑09‑04
+- Initial stable CLI release
+
+---
+
+## [0.1.0] — 2025‑08‑15
+- Prototype release
+
+---
+
+## [Unreleased]
+### Added
+- Initial Vitest test suite
 - Tests for filename normalization, frontmatter builders, and merge behavior
 - Test infrastructure for future CI integration
 - AI usage disclosure and contribution guidelines
+- CODEOWNERS, issue templates, PR template
+- CI workflow (linting, Semgrep, tests)
 
----
-
-## Short-Term Enhancements
-
-### **Bug Fixes**
-- **Artist `images:` field not editable in Obsidian**  
-  Replace nested Spotify image objects with a simple list of URLs.
-- **`updated:` field triggers “Expected Date” warning**  
-  Create the field but allow Obsidian’s Frontmatter Writing plugin to normalize the date format.
-
-### **Metadata Improvements**
-- Normalize all date fields to plugin‑compatible placeholders (`now`, `{{date}}`, etc.).
-- Ensure album and artist frontmatter always includes all expected fields, even if empty.
-
-### **Existing Short-Term Items**
-- Add optional cover image download
-- Add dry-run mode (`--dry-run`)
-- Add two-way tagging support
-- Add reading progress syncing
-- Add custom metadata pushback
-- Add automation options (cron, Raycast, etc.)
-
----
-
-## Medium-Term Enhancements
-
-### **Metadata Expansion**
-- Add MusicBrainz enrichment for:
-  - producers  
-  - engineers  
-  - studios  
-  - recording locations  
-  - catalog numbers  
-  - release groups  
-  - alternate release dates  
-
-### **Future Metadata Providers (Planned)**
-- **Wikidata**: origin, active years, biography summary, associated acts  
-- **Cover Art Archive**: high‑resolution album art  
-- **Discogs**: label history, catalog numbers, pressing info  
-- **AcousticBrainz**: BPM, key, mood, energy  
-
-### **Existing Medium-Term Items**
-- Add file‑move behavior after writing frontmatter (destination set via `.env`)
-- Improve CLI ergonomics (interactive loops, filename confirmation)
-- Add more robust filename normalization options
-- Add optional artist‑note prompt during artist frontmatter generation
-
----
-
-## Long-Term Enhancements
-
-### **Plugin Architecture + Fusion Engine**
-- Add plugin‑style architecture for metadata providers (Spotify, MusicBrainz, Discogs, etc.)
-- Combine Spotify + MusicBrainz + Wikidata into a unified schema
-- Add enrichment priority rules
-- Add metadata completeness scoring
-
-### **CI + Tooling**
-- Add Semgrep to CI (GitHub Actions)
-- Add ESLint + Prettier to CI
-- Add pre‑commit hooks for lint + Semgrep enforcement
-
-### **Documentation + UX**
-- Add documentation site or richer README examples
-
----
-
+### Changed
+- Updated frontmatter-helper for testability
+- Updated package.json to align version with manifest.json
