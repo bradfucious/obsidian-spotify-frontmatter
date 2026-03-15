@@ -2,6 +2,7 @@ import fs from "fs/promises";
 import path from "path";
 import yaml from "js-yaml";
 import fetch from "node-fetch";
+const existing = yaml.load(match[1], { schema: yaml.FAILSAFE_SCHEMA }) || {};
 
 /**
  * Helper utilities for building and writing frontmatter for albums and artists.
@@ -169,7 +170,11 @@ export function ensureMdExtension(filename) {
 export function normalizeArtistFilename(name) {
   if (!name) return "";
   // Remove path separators and control chars
-  const cleaned = name.replace(/[\/\\\0]/g, "").replace(/[\x00-\x1F\x7F]/g, "");
+  const cleaned = name
+  // eslint-disable-next-line no-control-regex
+  .replace(/[/\\\x00]/g, "")
+  // eslint-disable-next-line no-control-regex
+  .replace(/[\x00-\x1F\x7F]/g, "");
   const collapsed = cleaned.replace(/\s+/g, " ").trim();
   return collapsed;
 }
@@ -184,15 +189,11 @@ export async function writeFrontmatterFile(targetPath, frontmatterObj) {
   const dir = path.dirname(targetPath);
   await fs.mkdir(dir, { recursive: true });
 
-  let existing = null;
+  let existing;
   try {
     const txt = await fs.readFile(targetPath, "utf8");
     const match = txt.match(/^---\n([\s\S]*?)\n---\n?/);
-    if (match) {
-      existing = yaml.load(match[1]) || {};
-    } else {
-      existing = {};
-    }
+    existing = match ? yaml.load(match[1]) || {} : {};
   } catch {
     existing = {};
   }

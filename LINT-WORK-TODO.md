@@ -1,0 +1,4 @@
+- [ ] Fix remaining 'filename' undefined references in spotify-frontmatter-cli.mjs
+- [ ] Confirm Buffer usage in token-helper.mjs; remove or declare global
+- [ ] Run ESLint and unit tests; fix any regressions
+- [ ] Add brief PR description and link to gist with debug output
