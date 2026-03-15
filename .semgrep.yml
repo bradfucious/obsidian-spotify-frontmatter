@@ -1,0 +1,118 @@
+rules:
+  ###########################################################################
+  # 1. Secret Detection (tuned, low-noise)
+  ###########################################################################
+  - id: possible-secret
+    message: "Possible secret or credential detected"
+    severity: WARNING
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-regex: |
+          (?i)(api[_-]?key|secret|token|password|auth[_-]?key|bearer\s+[A-Za-z0-9._-]+)
+    metadata:
+      category: security
+      confidence: medium
+
+  ###########################################################################
+  # 2. Unsafe Regex (catastrophic backtracking)
+  ###########################################################################
+  - id: unsafe-regex
+    message: "Potentially unsafe regular expression (catastrophic backtracking)"
+    severity: WARNING
+    languages: [javascript, typescript]
+    patterns:
+      - pattern-regex: |
+          (\(.+\+.+\))|(\(.+\*.+\))
+    metadata:
+      category: correctness
+      confidence: low
+
+  ###########################################################################
+  # 3. Prototype Pollution (dangerous object merges)
+  ###########################################################################
+  - id: prototype-pollution-merge
+    message: "Object merge may allow prototype pollution"
+    severity: WARNING
+    languages: [javascript, typescript]
+    patterns:
+      - pattern: |
+          Object.assign($TARGET, $SOURCE)
+      - metavariable-pattern:
+          metavariable: $SOURCE
+          pattern-regex: "req\\.body|userInput|params"
+    metadata:
+      category: security
+      confidence: medium
+
+  ###########################################################################
+  # 4. YAML Load Safety (ensure safeLoad or schema)
+  ###########################################################################
+  - id: yaml-load-without-schema
+    message: "yaml.load used without explicit schema"
+    severity: WARNING
+    languages: [javascript, typescript]
+    patterns:
+      - pattern: yaml.load($X)
+    metadata:
+      category: security
+      confidence: medium
+
+  ###########################################################################
+  # 5. Path Handling (avoid string concat for paths)
+  ###########################################################################
+  - id: unsafe-path-concat
+    message: "Avoid string concatenation for filesystem paths"
+    severity: INFO
+    languages: [javascript, typescript]
+    patterns:
+      - pattern: |
+          $X + "/" + $Y
+    metadata:
+      category: correctness
+      confidence: medium
+
+  ###########################################################################
+  # 6. Dangerous eval / Function constructor
+  ###########################################################################
+  - id: no-eval
+    message: "Avoid eval() or Function() constructor"
+    severity: ERROR
+    languages: [javascript, typescript]
+    patterns:
+      - pattern: eval($X)
+      - pattern: new Function($X)
+    metadata:
+      category: security
+      confidence: high
+
+  ###########################################################################
+  # 7. Unsafe fs.writeFile without encoding
+  ###########################################################################
+  - id: fs-writefile-no-encoding
+    message: "fs.writeFile should specify encoding when writing strings"
+    severity: INFO
+    languages: [javascript, typescript]
+    patterns:
+      - pattern: fs.writeFile($PATH, $DATA)
+      - metavariable-pattern:
+          metavariable: $DATA
+          pattern-regex: "^\"|^`|^'"
+    metadata:
+      category: correctness
+      confidence: medium
+
+  ###########################################################################
+  # 8. Node child_process exec without sanitization
+  ###########################################################################
+  - id: child-process-exec
+    message: "Avoid child_process.exec with unsanitized input"
+    severity: WARNING
+    languages: [javascript, typescript]
+    patterns:
+      - pattern: exec($CMD)
+      - metavariable-pattern:
+          metavariable: $CMD
+          pattern-regex: "req|user|input|args"
+    metadata:
+      category: security
+      confidence: medium

@@ -50,6 +50,7 @@ async function main() {
 
   while (true) {
     /* ---------------- Mode selection ---------------- */
+    // eslint-disable-next-line no-useless-assignment
     let mode = "album";
     if (!artistOnlyFlag) {
       console.log("\n(Type q to quit)\n");
@@ -132,6 +133,7 @@ async function artistFlow(token, notesRoot, flags = {}) {
   const suggestedFilename = ensureMdExtension(suggestedBase);
 
   // Filename prompt (Option B style)
+  // eslint-disable-next-line no-useless-assignment
   let filename = null;
   while (true) {
     console.log(`Artist: ${artist.name}`);
@@ -401,6 +403,7 @@ async function albumFlow(token, notesRoot, flags = {}) {
   const suggestedBase = truncateFilename(normalizeForFilename(`${artist.name} ${album.name}`));
   const suggestedFilename = ensureMdExtension(suggestedBase);
 
+  // eslint-disable-next-line no-useless-assignment
   let filename = null;
   while (true) {
     console.log(`Album: ${album.name}`);
