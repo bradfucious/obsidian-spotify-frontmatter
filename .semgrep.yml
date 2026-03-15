@@ -14,18 +14,21 @@ rules:
       confidence: medium
 
   ###########################################################################
-  # 2. Unsafe Regex (catastrophic backtracking)
+  # 2. Unsafe Regex (nested quantifiers inside regex literals only)
   ###########################################################################
   - id: unsafe-regex
-    message: "Potentially unsafe regular expression (catastrophic backtracking)"
+    message: "Potentially unsafe regular expression (nested quantifiers may cause catastrophic backtracking)"
     severity: WARNING
     languages: [javascript, typescript]
     patterns:
+      # Match JavaScript regex literals that contain a group with a +/* inside
+      # followed by another +/* (e.g. /(...+...)+/). This avoids matching
+      # arithmetic or other non-regex uses of +.
       - pattern-regex: |
-          (\(.+\+.+\))|(\(.+\*.+\))
+          (?s)\/[^\/\\\n]*(\([^\)]*[+*][^\)]*\))[+*][^\/\\\n]*\/[gimsuy]*
     metadata:
       category: correctness
-      confidence: low
+      confidence: medium
 
   ###########################################################################
   # 3. Prototype Pollution (dangerous object merges)

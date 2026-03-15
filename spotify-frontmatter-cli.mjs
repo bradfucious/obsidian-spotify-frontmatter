@@ -239,7 +239,7 @@ async function artistFlow(token, notesRoot, flags = {}) {
       try {
         const imgUrl = frontmatter.images[0].url;
         const ext = path.extname(new URL(imgUrl).pathname) || ".jpg";
-        const slug = normalizeArtistFilename(artist.name).replace(/\s+/g, "-");
+        const slug = normalizeArtistFilename(artist.name).replace(/[ \t\r\n]+/g, "-");
         const destRel = path.join("assets", "covers", `${slug}${ext}`);
         const destAbs = path.join(notesRoot, destRel);
         await downloadImage(imgUrl, destAbs);
@@ -350,14 +350,14 @@ async function albumFlow(token, notesRoot, flags = {}) {
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-zA-Z0-9\s-_.]/g, "")
       .trim()
-      .replace(/\s+/g, "-")
-      .replace(/-+/g, "-")
+      .replace(/[ \t\r\n]+/g, "-")
+      .replace(/-{1,}/g, "-")
       .toLowerCase();
   }
 
   function truncateFilename(name, maxLen = 120) {
     if (name.length <= maxLen) return name;
-    return name.slice(0, maxLen).replace(/-+$/, "");
+    return name.slice(0, maxLen).replace(/-{1,}$/, "");
   }
 
   async function findExistingFilesInFolder(folder, queryFragment) {
@@ -645,4 +645,3 @@ main().catch((err) => {
   console.error("Fatal:", err.message);
   process.exit(1);
 });
-
