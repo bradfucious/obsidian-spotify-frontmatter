@@ -174,7 +174,8 @@ export function normalizeArtistFilename(name) {
   .replace(/[/\\\x00]/g, "")
   // eslint-disable-next-line no-control-regex
   .replace(/[\x00-\x1F\x7F]/g, "");
-  const collapsed = cleaned.replace(/\s+/g, " ").trim();
+  // Replace runs of whitespace (space, tab, newline) with a single space
+  const collapsed = cleaned.replace(/[ \t\r\n]+/g, " ").trim();
   return collapsed;
 }
 
