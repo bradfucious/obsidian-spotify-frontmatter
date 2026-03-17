@@ -1,5 +1,8 @@
 # Obsidian Spotify Frontmatter Utility
 
+![CI](https://github.com/bradfucious/obsidian-spotify-frontmatter/actions/workflows/ci.yml/badge.svg)&nbsp;![Security](https://github.com/bradfucious/obsidian-spotify-frontmatter/actions/workflows/cl.yml/badge.svg)&nbsp;![Release](https://img.shields.io/github/v/release/bradfucious/obsidian-spotify-frontmatter)&nbsp;![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+
 A Node.js command-line tool that fetches album and artist metadata from Spotify and writes structured YAML frontmatter into notes inside your Obsidian vault. Designed for safety, reproducibility, and ergonomic workflows.
 
 ---
