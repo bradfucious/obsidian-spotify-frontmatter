@@ -41,3 +41,6 @@ temp/
 dist/
 .vscode/
 .DS_store
+
+# Static analysis artifacts
+semgrep-findings.json

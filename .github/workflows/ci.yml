@@ -26,8 +26,7 @@ jobs:
         uses: returntocorp/semgrep-action@v1
         with:
           config: .semgrep.yml
-          strict: fales
+          strict: false
 
       - name: Run tests
         run: npm test
-
