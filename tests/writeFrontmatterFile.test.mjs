@@ -20,7 +20,7 @@ genres:
     const incoming = {
       name: "SHOULD NOT OVERWRITE",
       genres: ["alternative"],
-      updated: "01-01-2026"
+      updated: "2026-01-01"
     };
 
     await writeFrontmatterFile(file, incoming);

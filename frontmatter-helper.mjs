@@ -82,7 +82,7 @@ export function buildAlbumFrontmatter(albumDetails, artist) {
     emotional_resonance: [],
     ikigai_alignment: [],
     bonus_content: [],
-    updated: formatDateMMDDYYYY(),
+    updated: new Date().toISOString().slice(0, 10),
     sticker: "",
     cover:
       albumDetails.images && albumDetails.images[0] ? albumDetails.images[0].url : "",
@@ -132,7 +132,7 @@ export function buildArtistFrontmatter(artistDetails = {}, options = {}) {
     spotify_url,
     emotional_resonance: [],
     ikigai_alignment: [],
-    updated: formatDateMMDDYYYY(),
+    updated: new Date().toISOString().slice(0, 10),
     sticker: "",
     cover: cover ? cover : "",
     created: formatDateMMDDYYYY(),
