@@ -38,7 +38,7 @@ A Node.js command-line tool that fetches album and artist metadata from Spotify 
   - popularity  
   - images (Spotify images array)  
   - cover (first Spotify image URL by default)  
-  - created and updated dates (MM-DD-YYYY)
+  - created and updated dates (YYYY-MM-DD)
 
 ---
 
