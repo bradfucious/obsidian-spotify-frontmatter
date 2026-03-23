@@ -4,6 +4,26 @@ import yaml from "js-yaml";
 import fetch from "node-fetch";
 
 /**
+ * Normalize an images array into plain serializable objects:
+ * [{ url: string, height?: number, width?: number }, ...]
+ */
+function normalizeImages(raw) {
+  if (!raw || !Array.isArray(raw)) return [];
+  return raw
+    .filter(Boolean)
+    .map((img) => {
+      // Accept either .url or .src
+      const url = img && (img.url || img.src) ? String(img.url || img.src) : null;
+      if (!url) return null;
+      const out = { url };
+      if (typeof img.height === "number") out.height = img.height;
+      if (typeof img.width === "number") out.width = img.width;
+      return out;
+    })
+    .filter(Boolean);
+}
+
+/**
  * Helper utilities for building and writing frontmatter for albums and artists.
  *
  * - buildAlbumFrontmatter(albumDetails, artist)
@@ -66,6 +86,8 @@ export function buildAlbumFrontmatter(albumDetails, artist) {
   const producers = Array.isArray(albumDetails.producers) ? albumDetails.producers : [];
   const studio = Array.isArray(albumDetails.studio) ? albumDetails.studio : [];
 
+  const albumImages = normalizeImages(albumDetails.images);
+
   const front = {
     type: "album",
     title: albumDetails.name || "",
@@ -84,10 +106,11 @@ export function buildAlbumFrontmatter(albumDetails, artist) {
     bonus_content: [],
     updated: new Date().toISOString().slice(0, 10),
     sticker: "",
-    cover:
-      albumDetails.images && albumDetails.images[0] ? albumDetails.images[0].url : "",
+    cover: albumImages && albumImages.length ? albumImages[0].url : "",
+    images: albumImages,
     color: "",
   };
+
 
   return front;
 }
@@ -113,13 +136,14 @@ export function buildArtistFrontmatter(artistDetails = {}, options = {}) {
       ? artistDetails.external_urls.spotify
       : artistDetails.uri || "";
 
-  const images = includeImages && Array.isArray(artistDetails.images) ? artistDetails.images : [];
-
+  const images = includeImages ? normalizeImages(artistDetails.images) : [];
+ 
   const cover = images && images.length ? images[0].url : "";
 
   const followers = includeFollowers && artistDetails.followers ? artistDetails.followers.total : undefined;
 
   const popularity = includePopularity && typeof artistDetails.popularity === "number" ? artistDetails.popularity : undefined;
+
 
   const front = {
     type: "artist",
@@ -231,9 +255,9 @@ export async function writeFrontmatterFile(targetPath, frontmatterObj) {
     if (merged.followers !== undefined) ordered.followers = merged.followers;
     if (merged.popularity !== undefined) ordered.popularity = merged.popularity;
     if (merged.images !== undefined) ordered.images = merged.images;
-    yamlText = yaml.dump(ordered, { lineWidth: 120 });
+    yamlText = yaml.dump(ordered, { lineWidth: 120, noRefs: true });
   } else {
-    yamlText = yaml.dump(merged, { lineWidth: 120 });
+    yamlText = yaml.dump(merged, { lineWidth: 120, noRefs: true });
   }
 
   const body = `---\n${yamlText}---\n\n`;
