@@ -22,6 +22,8 @@ describe("buildAlbumFrontmatter", () => {
     expect(fm.duration).toBe("2m 30s");
     expect(fm.tracklist).toEqual(["Track 1", "Track 2"]);
     expect(fm.cover).toBe("http://example.com/cover.jpg");
+    // images should be normalized to an array of plain objects with url
+    expect(Array.isArray(fm.images)).toBe(true);
+    expect(typeof fm.images[0].url).toBe("string");
   });
 });
-
