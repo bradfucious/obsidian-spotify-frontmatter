@@ -12,13 +12,9 @@ function normalizeImages(raw) {
   return raw
     .filter(Boolean)
     .map((img) => {
-      // Accept either .url or .src
       const url = img && (img.url || img.src) ? String(img.url || img.src) : null;
       if (!url) return null;
-      const out = { url };
-      if (typeof img.height === "number") out.height = img.height;
-      if (typeof img.width === "number") out.width = img.width;
-      return out;
+      return { url };
     })
     .filter(Boolean);
 }
