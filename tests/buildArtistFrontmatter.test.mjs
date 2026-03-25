@@ -17,6 +17,9 @@ describe("buildArtistFrontmatter", () => {
     expect(fm.name).toBe("Radiohead");
     expect(fm.genres).toContain("alternative");
     expect(fm.cover).toBe("http://example.com/img.jpg");
+    expect(Array.isArray(fm.images)).toBe(true);
+    expect(typeof fm.images[0]).toBe("string");
+    expect(fm.images[0]).toBe("http://example.com/img.jpg");
     expect(fm.followers).toBe(1000);
     expect(fm.popularity).toBe(88);
   });

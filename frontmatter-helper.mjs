@@ -13,8 +13,7 @@ function normalizeImages(raw) {
     .filter(Boolean)
     .map((img) => {
       const url = img && (img.url || img.src) ? String(img.url || img.src) : null;
-      if (!url) return null;
-      return { url };
+      return url;
     })
     .filter(Boolean);
 }
@@ -102,7 +101,7 @@ export function buildAlbumFrontmatter(albumDetails, artist) {
     bonus_content: [],
     updated: new Date().toISOString().slice(0, 10),
     sticker: "",
-    cover: albumImages && albumImages.length ? albumImages[0].url : "",
+    cover: albumImages && albumImages.length ? albumImages[0] : "",
     images: albumImages,
     color: "",
   };
@@ -134,7 +133,7 @@ export function buildArtistFrontmatter(artistDetails = {}, options = {}) {
 
   const images = includeImages ? normalizeImages(artistDetails.images) : [];
  
-  const cover = images && images.length ? images[0].url : "";
+  const cover = images && images.length ? images[0] : "";
 
   const followers = includeFollowers && artistDetails.followers ? artistDetails.followers.total : undefined;
 
@@ -225,6 +224,13 @@ export async function writeFrontmatterFile(targetPath, frontmatterObj) {
       merged[k] = v;
     }
   }
+
+if (merged.images && Array.isArray(merged.images)) {
+  merged.images = merged.images
+    .filter(Boolean)
+    .map((i) => (typeof i === "string" ? i : (i && (i.url || i.src) ? String(i.url || i.src) : null)))
+    .filter(Boolean);
+}
 
   // Preserve canonical ordering for artist frontmatter if type === 'artist'
   let yamlText;
