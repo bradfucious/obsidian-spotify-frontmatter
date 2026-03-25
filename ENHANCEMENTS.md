@@ -41,4 +41,3 @@ This document tracks potential improvements, future features, and workflow refin
 - Add plugin‑style architecture for metadata providers (Spotify, MusicBrainz, Discogs, etc.)
 
 ---
-
