@@ -24,6 +24,7 @@ describe("buildAlbumFrontmatter", () => {
     expect(fm.cover).toBe("http://example.com/cover.jpg");
     // images should be normalized to an array of plain objects with url
     expect(Array.isArray(fm.images)).toBe(true);
-    expect(typeof fm.images[0].url).toBe("string");
+    expect(typeof fm.images[0]).toBe("string");
+    expect(fm.images[0]).toBe("http://example.com/cover.jpg");
   });
 });
