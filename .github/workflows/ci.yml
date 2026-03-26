@@ -4,6 +4,13 @@ on:
   push:
   pull_request:
 
+# Explicitly declare least-privilege permissions.
+# This overrides the default 'contents: write' (or write-all in some orgs)
+# so the workflow cannot make unintended changes to the repository.
+# Individual jobs that need elevated permissions should declare them locally.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
