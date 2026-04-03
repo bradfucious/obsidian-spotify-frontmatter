@@ -12,11 +12,11 @@ This document tracks potential improvements, future features, and workflow refin
 - Static analysis cleanup (Semgrep)
 - YAML schema hardening (`FAILSAFE_SCHEMA`)
 - Regex normalization safety improvements
+- **ENH-011: External cover art folder** (v0.7.0) — downloads album and artist cover art to `EXTERNAL_COVERS_PATH` outside the vault, references via `file:///` URI. Removes in-vault download option. Falls back to Spotify CDN URL if not configured.
 
 ---
 
 ## Short-Term Enhancements
-- Add optional cover image download
 - Add dry-run mode (`--dry-run`)
 - Add two-way tagging support
 - Add reading progress syncing

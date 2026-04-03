@@ -4,14 +4,14 @@ import path from "path";
 import fetch from "node-fetch";
 import inquirer from "inquirer";
 import dotenv from "dotenv";
-import { ensureNotesRoot, getEnv, setEnv, resetNotesRoot } from "./token-helper.mjs";
+import { ensureNotesRoot, getEnv, setEnv, resetNotesRoot, ensureExternalCoversPath } from "./token-helper.mjs";
 import {
   buildAlbumFrontmatter,
   buildArtistFrontmatter,
   writeFrontmatterFile,
   ensureMdExtension,
   normalizeArtistFilename,
-  downloadImage,
+  downloadCoverArt,
 } from "./frontmatter-helper.mjs";
 
 dotenv.config();
@@ -39,6 +39,7 @@ async function main() {
   }
 
   const notesRoot = await ensureNotesRoot();
+  const externalCoversPath = await ensureExternalCoversPath();
 
   const clientId = getEnv("SPOTIFY_CLIENT_ID");
   const clientSecret = getEnv("SPOTIFY_CLIENT_SECRET");
@@ -74,9 +75,9 @@ async function main() {
     }
 
     if (mode === "artist") {
-      await artistFlow(token, notesRoot, { deepSearchFlag, dryRunFlag });
+      await artistFlow(token, notesRoot, externalCoversPath, { deepSearchFlag, dryRunFlag });
     } else {
-      await albumFlow(token, notesRoot, { deepSearchFlag, dryRunFlag });
+      await albumFlow(token, notesRoot, externalCoversPath, { deepSearchFlag, dryRunFlag });
     }
 
     const { again } = await inquirer.prompt({
@@ -94,7 +95,7 @@ async function main() {
 
 /* ----------------- Artist Flow ----------------- */
 
-async function artistFlow(token, notesRoot, flags = {}) {
+async function artistFlow(token, notesRoot, externalCoversPath, flags = {}) {
   console.log("\n(Type q to quit)\n");
   const { artistName } = await inquirer.prompt({
     type: "input",
@@ -220,41 +221,17 @@ async function artistFlow(token, notesRoot, flags = {}) {
   const options = { includeFollowers: true, includePopularity: true, includeImages: true };
   const frontmatter = buildArtistFrontmatter(artist, options);
 
-  // If images exist, prompt whether to use Spotify URL or download
+  // If images exist, download to external folder or fall back to CDN URL
   if (frontmatter.images && frontmatter.images.length) {
-    console.log("\nArtist images found on Spotify.\n");
-    const { imageChoice } = await inquirer.prompt({
-      type: "list",
-      name: "imageChoice",
-      message: "Use Spotify image URL or download to local assets?",
-      choices: [
-        { name: "Use Spotify image URL (default)", value: "spotify" },
-        { name: "Download to NOTES_ROOT/assets/covers/ (opt-in)", value: "download" },
-        { name: "Skip images", value: "skip" },
-      ],
-    });
-
-    if (imageChoice === "download") {
-      // Download first image
-      try {
-        const imgUrl = frontmatter.images[0].url;
-        const ext = path.extname(new URL(imgUrl).pathname) || ".jpg";
-        const slug = normalizeArtistFilename(artist.name).replace(/[ \t\r\n]+/g, "-");
-        const destRel = path.join("assets", "covers", `${slug}${ext}`);
-        const destAbs = path.join(notesRoot, destRel);
-        await downloadImage(imgUrl, destAbs);
-        // Set cover to local embed
-        frontmatter.cover = `[[${path.basename(destRel)}]]`;
-      } catch (err) {
-        console.error(`Failed to download image: ${err.message}`);
-        // fallback to spotify url
-        frontmatter.cover = frontmatter.images[0].url;
-      }
-    } else if (imageChoice === "spotify") {
-      frontmatter.cover = frontmatter.images[0].url;
+    const imgUrl = frontmatter.images[0];
+    if (externalCoversPath) {
+      const slug = normalizeArtistFilename(artist.name).replace(/[ \t\r\n]+/g, "-");
+      const localUri = await downloadCoverArt(imgUrl, externalCoversPath, "artists", slug);
+      frontmatter.cover = localUri ?? imgUrl;
+      if (localUri) console.log(`\n✓ Cover downloaded: ${localUri}\n`);
+      else console.log(`\n⚠ Cover download failed — using Spotify CDN URL\n`);
     } else {
-      // skip images
-      frontmatter.cover = "";
+      frontmatter.cover = imgUrl;
     }
   }
 
@@ -290,7 +267,7 @@ async function artistFlow(token, notesRoot, flags = {}) {
 
 /* ----------------- Album Flow (unchanged logic, Option B prompts) ----------------- */
 
-async function albumFlow(token, notesRoot, flags = {}) {
+async function albumFlow(token, notesRoot, externalCoversPath, flags = {}) {
   console.log("\n(Type q to quit)\n");
   const { artistName } = await inquirer.prompt({
     type: "input",
@@ -486,6 +463,25 @@ async function albumFlow(token, notesRoot, flags = {}) {
 
   const albumDetails = await fetchAlbumDetails(album.id, token);
   const frontmatter = buildAlbumFrontmatter(albumDetails, artist);
+
+  // ENH-011: download cover to external folder, write file:// reference
+  // Falls back to Spotify CDN URL if EXTERNAL_COVERS_PATH not configured
+  if (frontmatter.cover && externalCoversPath) {
+    const imgUrl = frontmatter.cover;
+    const slug = `${normalizeArtistFilename(artist.name)}-${album.name}`
+      .normalize("NFKD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9\s-]/g, "")
+      .trim()
+      .replace(/[ \t\r\n]+/g, "-")
+      .replace(/-{2,}/g, "-")
+      .toLowerCase()
+      .slice(0, 120);
+    const localUri = await downloadCoverArt(imgUrl, externalCoversPath, "albums", slug);
+    frontmatter.cover = localUri ?? imgUrl;
+    if (localUri) console.log(`\n✓ Cover downloaded: ${localUri}\n`);
+    else console.log(`\n⚠ Cover download failed — using Spotify CDN URL\n`);
+  }
 
   console.log("\nWriting to:");
   console.log(targetPath + "\n");

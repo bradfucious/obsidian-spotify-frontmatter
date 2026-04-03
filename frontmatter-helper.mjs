@@ -280,3 +280,38 @@ export async function downloadImage(url, destPath) {
   await fs.writeFile(destPath, Buffer.from(buffer));
 }
 
+/**
+ * downloadCoverArt(imageUrl, externalCoversPath, mediaType, slug)
+ *
+ * Downloads a cover image from imageUrl to:
+ *   {externalCoversPath}/{mediaType}/{slug}.jpg
+ *
+ * Returns a file:/// URI for use in Obsidian frontmatter.
+ * Skips download if the file already exists and is non-zero bytes.
+ * Returns null on failure (caller should fall back to CDN URL).
+ *
+ * @param {string} imageUrl          - Source URL (Spotify CDN)
+ * @param {string} externalCoversPath - Absolute path to covers root (tilde already expanded)
+ * @param {"albums"|"artists"} mediaType - Subfolder name
+ * @param {string} slug              - Filename-safe identifier (no extension)
+ */
+export async function downloadCoverArt(imageUrl, externalCoversPath, mediaType, slug) {
+  const destPath = path.join(externalCoversPath, mediaType, `${slug}.jpg`);
+
+  // Skip if already downloaded and non-empty
+  try {
+    const stat = await fs.stat(destPath);
+    if (stat.size > 0) {
+      return `file://${encodeURI(destPath)}`;
+    }
+  } catch { /* file doesn't exist yet */ }
+
+  try {
+    await downloadImage(imageUrl, destPath);
+    return `file://${encodeURI(destPath)}`;
+  } catch (err) {
+    console.error(`Failed to download cover art for ${slug}: ${err.message}`);
+    return null;
+  }
+}
+

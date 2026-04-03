@@ -22,7 +22,7 @@ A Node.js command-line tool that fetches album and artist metadata from Spotify 
   - duration (computed from tracklist)  
   - discs  
   - tracklist  
-  - cover image URL  
+  - cover image — downloaded to `EXTERNAL_COVERS_PATH/albums/` and referenced via `file:///` URI (falls back to Spotify CDN URL if not configured)
 - **Artist frontmatter fields:**
   - type  
   - name  
@@ -37,7 +37,7 @@ A Node.js command-line tool that fetches album and artist metadata from Spotify 
   - followers  
   - popularity  
   - images (Spotify images array)  
-  - cover (first Spotify image URL by default)  
+  - cover — downloaded to `EXTERNAL_COVERS_PATH/artists/` and referenced via `file:///` URI (falls back to Spotify CDN URL if not configured)
   - created and updated dates (YYYY-MM-DD)
 
 ---
@@ -72,10 +72,9 @@ node spotify-frontmatter-cli.mjs --reset-root
 - **Artist note behavior:**
   - Builds canonical artist frontmatter in the project’s preferred YAML order.
   - Enrichment fields included: followers, popularity, images.
-  - `cover` defaults to the first Spotify image URL.
+  - `cover` downloaded to `EXTERNAL_COVERS_PATH/artists/` and referenced via `file:///` URI.
   - `notable_releases` is an empty list by default and can be filled manually or via future bulk import.
   - Filename template: `{artist}.md` with the same normalization logic used for albums.
-  - Image handling: prompt to use Spotify URL or opt‑in to download to `NOTES_ROOT/assets/covers/`.
 
 ---
 
@@ -132,7 +131,8 @@ node spotify-frontmatter-cli.mjs
 
 You will be prompted for:
 
-- `NOTES_ROOT` (absolute path)
+- `NOTES_ROOT` (absolute path to your vault notes folder)
+- `EXTERNAL_COVERS_PATH` (absolute path outside the vault for cover art downloads — leave blank to use Spotify CDN URLs)
 - Spotify Client ID
 - Spotify Client Secret
 
