@@ -92,3 +92,54 @@ export async function setEnv(key, value) {
   env[key] = value;
   await writeEnvFile(env);
 }
+
+/**
+ * Expand a leading tilde to the user's home directory.
+ */
+export function expandPath(p) {
+  if (p && (p === "~" || p.startsWith("~/"))) {
+    return p.replace("~", os.homedir());
+  }
+  return p;
+}
+
+/**
+ * Return the resolved EXTERNAL_COVERS_PATH from .env, prompting once to set it
+ * if not already configured. Returns null if the user explicitly skips.
+ *
+ * Mirrors ensureNotesRoot() — stores the value in .env for future runs.
+ */
+export async function ensureExternalCoversPath() {
+  const env = await readEnvFile();
+  if (env.EXTERNAL_COVERS_PATH && env.EXTERNAL_COVERS_PATH.trim()) {
+    const resolved = expandPath(env.EXTERNAL_COVERS_PATH.trim());
+    process.env.EXTERNAL_COVERS_PATH = resolved;
+    return resolved;
+  }
+
+  const defaultPath = path.join(os.homedir(), "Pictures", "ObsidianCovers", "Spotify");
+  console.log("\nNo EXTERNAL_COVERS_PATH configured.");
+  console.log(`Cover art will be downloaded outside your vault to keep it clean.\n`);
+
+  const { coversPath } = await inquirer.prompt([
+    {
+      type: "input",
+      name: "coversPath",
+      message: "External covers path (leave blank to use Spotify CDN URLs instead):",
+      default: defaultPath,
+    },
+  ]);
+
+  const trimmed = coversPath.trim();
+  if (!trimmed) {
+    console.log("Skipped — Spotify CDN URLs will be used for cover art.");
+    return null;
+  }
+
+  const resolved = expandPath(trimmed);
+  env.EXTERNAL_COVERS_PATH = trimmed; // store with tilde so it's portable
+  await writeEnvFile(env);
+  process.env.EXTERNAL_COVERS_PATH = resolved;
+  console.log(`Saved EXTERNAL_COVERS_PATH to .env: ${trimmed}\n`);
+  return resolved;
+}

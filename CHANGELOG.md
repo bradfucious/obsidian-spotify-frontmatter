@@ -3,6 +3,31 @@ All notable changes to this project are documented here.
 
 ---
 
+## [0.7.0] — 2026-03-29
+
+### Added
+
+- **ENH-011: External cover art folder — download Spotify images outside vault with `file://` references**
+
+  Replaces fragile Spotify CDN URLs with locally-cached cover art downloaded to an external folder outside the Obsidian vault. Images inside the vault pollute Obsidian Sync and the file graph; this moves them out.
+
+  **New `.env` key:** `EXTERNAL_COVERS_PATH` — prompted once on first run if not set, stored in `.env` for subsequent runs. Default suggestion: `~/Pictures/ObsidianCovers/Spotify`. Leave blank to keep using Spotify CDN URLs.
+
+  **Album flow:** now downloads cover to `{EXTERNAL_COVERS_PATH}/albums/{slug}.jpg` and writes `cover: file:///...` in frontmatter. Previously wrote CDN URL silently with no download option.
+
+  **Artist flow:** now downloads cover to `{EXTERNAL_COVERS_PATH}/artists/{slug}.jpg` and writes `cover: file:///...`. Previously prompted between CDN URL, in-vault download (`NOTES_ROOT/assets/covers/`), or skip. The in-vault download option is removed.
+
+  **Behaviour:**
+  - Skip download if local file already exists and is non-zero bytes
+  - Falls back to Spotify CDN URL if `EXTERNAL_COVERS_PATH` not configured or download fails
+  - `file:///` URI confirmed working in Obsidian desktop (tested 2026-03-22)
+
+  **New helpers:**
+  - `token-helper.mjs`: `ensureExternalCoversPath()`, `expandPath()`
+  - `frontmatter-helper.mjs`: `downloadCoverArt()` — thin wrapper over `downloadImage()` with skip-if-exists logic and `file:///` URI return
+
+---
+
 ## [0.6.1] — 2026‑03‑13
 ### Summary
 Artist Mode refinements, enrichment fixes, documentation updates, and reset‑auth bugfix.
